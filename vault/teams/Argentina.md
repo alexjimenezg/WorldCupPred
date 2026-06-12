@@ -6,8 +6,8 @@ confederation: CONMEBOL
 elo: 2115
 fifa_rank: 2
 host: False
-champion_pct: 16.42
-updated: 2026-06-12 09:49
+champion_pct: 16.56
+updated: 2026-06-12 15:06
 ---
 
 # Argentina
@@ -17,16 +17,16 @@ updated: 2026-06-12 09:49
 ## Title odds (latest)
 | Stage | Probability |
 | --- | --- |
-| Champion | 16.4% |
-| Reach final | 25.5% |
-| Reach semi-final | 38.0% |
-| Reach quarter-final | 53.1% |
-| Reach round of 16 | 68.3% |
-| Reach round of 32 | 97.3% |
-| Win [[Group J]] | 70.5% |
+| Champion | 16.6% |
+| Reach final | 25.6% |
+| Reach semi-final | 38.5% |
+| Reach quarter-final | 53.0% |
+| Reach round of 16 | 68.2% |
+| Reach round of 32 | 97.2% |
+| Win [[Group J]] | 69.1% |
 
 ## Group J rivals
 [[Algeria]], [[Austria]], [[Jordan]]
 
 ## Links
-Confederation [[CONMEBOL]] · run [[Simulation 2026-06-12 0949]] · [[00-Index|Index]]
+Confederation [[CONMEBOL]] · run [[Simulation 2026-06-12 1506]] · [[00-Index|Index]]

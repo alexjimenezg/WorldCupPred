@@ -38,6 +38,8 @@ _KO_WINDOWS: list[tuple[str, str, str | None]] = [
 def infer_stage(date, home: str, away: str) -> str | None:
     """Map a match date (+ the pairing) to the simulator's stage label, or None to skip."""
     d = pd.Timestamp(date)
+    if d.tzinfo is not None:  # ESPN kickoffs are tz-aware UTC; windows are naive
+        d = d.tz_convert("UTC").tz_localize(None)
     group_end = pd.Timestamp(CONFIG.groups_raw["dates"]["group_stage_end"])
     if d <= group_end:
         # same-group pairing is the defining property; anything else is noise
@@ -107,6 +109,12 @@ def sync_results(store: ResultsStore | None = None, *, force: bool = True) -> di
             sources.append("football-data.org")
         except Exception as exc:  # network/key trouble — fall back, don't die
             print(f"[auto_results] football-data.org failed: {exc}")
+    try:  # ESPN: keyless and updated within minutes of full time
+        from src.data import espn_live
+        espn_live.import_finished_to_store(store=store)
+        sources.append("espn")
+    except Exception as exc:
+        print(f"[auto_results] espn failed: {exc}")
     try:
         import_martj42_to_store(store, force=force)
         sources.append("martj42")

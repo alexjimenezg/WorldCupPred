@@ -1,17 +1,17 @@
 ---
 type: index
-updated: 2026-06-12 09:49
+updated: 2026-06-12 15:06
 favorite: Spain
 ---
 
 # WorldCupPred — Knowledge Base
 
-_Updated 2026-06-12 09:49. 2 World Cup results recorded._
+_Updated 2026-06-12 15:06. 3 World Cup results recorded._
 
-**Current favorites:** [[Spain]] 17.2% · [[Argentina]] 16.4% · [[France]] 9.0% · [[England]] 8.6% · [[Brazil]] 6.5%
+**Current favorites:** [[Spain]] 17.2% · [[Argentina]] 16.6% · [[France]] 8.9% · [[England]] 8.1% · [[Brazil]] 6.3%
 
 ## Navigate
-- [[Methodology]] · latest run [[Simulation 2026-06-12 0949]] (or [[Latest]])
+- [[Methodology]] · latest run [[Simulation 2026-06-12 1506]] (or [[Latest]])
 - Teams: [[Spain]], [[Argentina]], [[France]], [[England]], [[Brazil]], [[Portugal]], [[Germany]], [[Colombia]] … (48 total in `teams/`)
 - Groups: [[Group A]] [[Group B]] [[Group C]] [[Group D]] [[Group E]] [[Group F]] [[Group G]] [[Group H]] [[Group I]] [[Group J]] [[Group K]] [[Group L]]
 - Confederations: [[UEFA]] · [[CONMEBOL]] · [[CAF]] · [[AFC]] · [[CONCACAF]] · [[OFC]]

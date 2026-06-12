@@ -6,8 +6,8 @@ confederation: UEFA
 elo: 1830
 fifa_rank: 23
 host: False
-champion_pct: 0.6
-updated: 2026-06-12 09:49
+champion_pct: 0.66
+updated: 2026-06-12 15:06
 ---
 
 # Austria
@@ -17,16 +17,16 @@ updated: 2026-06-12 09:49
 ## Title odds (latest)
 | Stage | Probability |
 | --- | --- |
-| Champion | 0.6% |
-| Reach final | 2.3% |
-| Reach semi-final | 5.9% |
-| Reach quarter-final | 13.7% |
-| Reach round of 16 | 29.1% |
-| Reach round of 32 | 74.8% |
-| Win [[Group J]] | 14.3% |
+| Champion | 0.7% |
+| Reach final | 2.1% |
+| Reach semi-final | 5.8% |
+| Reach quarter-final | 14.1% |
+| Reach round of 16 | 29.0% |
+| Reach round of 32 | 74.3% |
+| Win [[Group J]] | 15.5% |
 
 ## Group J rivals
 [[Argentina]], [[Algeria]], [[Jordan]]
 
 ## Links
-Confederation [[UEFA]] · run [[Simulation 2026-06-12 0949]] · [[00-Index|Index]]
+Confederation [[UEFA]] · run [[Simulation 2026-06-12 1506]] · [[00-Index|Index]]

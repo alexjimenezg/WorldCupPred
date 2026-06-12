@@ -6,8 +6,8 @@ confederation: AFC
 elo: 1772
 fifa_rank: 30
 host: False
-champion_pct: 0.32
-updated: 2026-06-12 09:49
+champion_pct: 0.33
+updated: 2026-06-12 15:06
 ---
 
 # Iran
@@ -18,15 +18,15 @@ updated: 2026-06-12 09:49
 | Stage | Probability |
 | --- | --- |
 | Champion | 0.3% |
-| Reach final | 1.0% |
-| Reach semi-final | 3.8% |
-| Reach quarter-final | 12.4% |
+| Reach final | 1.2% |
+| Reach semi-final | 3.5% |
+| Reach quarter-final | 11.8% |
 | Reach round of 16 | 34.7% |
-| Reach round of 32 | 77.4% |
-| Win [[Group G]] | 24.2% |
+| Reach round of 32 | 77.3% |
+| Win [[Group G]] | 23.1% |
 
 ## Group G rivals
 [[Belgium]], [[Egypt]], [[New Zealand]]
 
 ## Links
-Confederation [[AFC]] · run [[Simulation 2026-06-12 0949]] · [[00-Index|Index]]
+Confederation [[AFC]] · run [[Simulation 2026-06-12 1506]] · [[00-Index|Index]]

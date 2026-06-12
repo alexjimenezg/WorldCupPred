@@ -6,8 +6,8 @@ confederation: UEFA
 elo: 1595
 fifa_rank: 65
 host: False
-champion_pct: 0.0
-updated: 2026-06-12 09:49
+champion_pct: 0.01
+updated: 2026-06-12 15:06
 ---
 
 # Bosnia and Herzegovina
@@ -20,13 +20,13 @@ updated: 2026-06-12 09:49
 | Champion | 0.0% |
 | Reach final | 0.1% |
 | Reach semi-final | 0.5% |
-| Reach quarter-final | 3.0% |
-| Reach round of 16 | 13.3% |
-| Reach round of 32 | 54.9% |
-| Win [[Group B]] | 5.4% |
+| Reach quarter-final | 4.0% |
+| Reach round of 16 | 17.8% |
+| Reach round of 32 | 66.6% |
+| Win [[Group B]] | 8.7% |
 
 ## Group B rivals
 [[Canada]], [[Qatar]], [[Switzerland]]
 
 ## Links
-Confederation [[UEFA]] · run [[Simulation 2026-06-12 0949]] · [[00-Index|Index]]
+Confederation [[UEFA]] · run [[Simulation 2026-06-12 1506]] · [[00-Index|Index]]

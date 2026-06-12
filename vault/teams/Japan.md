@@ -6,8 +6,8 @@ confederation: AFC
 elo: 1906
 fifa_rank: 14
 host: False
-champion_pct: 2.22
-updated: 2026-06-12 09:49
+champion_pct: 2.18
+updated: 2026-06-12 15:06
 ---
 
 # Japan
@@ -18,15 +18,15 @@ updated: 2026-06-12 09:49
 | Stage | Probability |
 | --- | --- |
 | Champion | 2.2% |
-| Reach final | 5.7% |
-| Reach semi-final | 12.4% |
-| Reach quarter-final | 24.9% |
-| Reach round of 16 | 42.9% |
-| Reach round of 32 | 87.5% |
-| Win [[Group F]] | 36.2% |
+| Reach final | 4.9% |
+| Reach semi-final | 11.4% |
+| Reach quarter-final | 24.1% |
+| Reach round of 16 | 42.8% |
+| Reach round of 32 | 88.2% |
+| Win [[Group F]] | 35.6% |
 
 ## Group F rivals
 [[Netherlands]], [[Sweden]], [[Tunisia]]
 
 ## Links
-Confederation [[AFC]] · run [[Simulation 2026-06-12 0949]] · [[00-Index|Index]]
+Confederation [[AFC]] · run [[Simulation 2026-06-12 1506]] · [[00-Index|Index]]

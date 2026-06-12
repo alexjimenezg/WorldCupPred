@@ -6,8 +6,8 @@ confederation: UEFA
 elo: 1712
 fifa_rank: 43
 host: False
-champion_pct: 0.08
-updated: 2026-06-12 09:49
+champion_pct: 0.06
+updated: 2026-06-12 15:06
 ---
 
 # Sweden
@@ -18,15 +18,15 @@ updated: 2026-06-12 09:49
 | Stage | Probability |
 | --- | --- |
 | Champion | 0.1% |
-| Reach final | 0.4% |
-| Reach semi-final | 1.4% |
+| Reach final | 0.3% |
+| Reach semi-final | 1.1% |
 | Reach quarter-final | 4.7% |
-| Reach round of 16 | 14.2% |
-| Reach round of 32 | 50.7% |
-| Win [[Group F]] | 8.1% |
+| Reach round of 16 | 14.3% |
+| Reach round of 32 | 50.3% |
+| Win [[Group F]] | 8.3% |
 
 ## Group F rivals
 [[Netherlands]], [[Japan]], [[Tunisia]]
 
 ## Links
-Confederation [[UEFA]] · run [[Simulation 2026-06-12 0949]] · [[00-Index|Index]]
+Confederation [[UEFA]] · run [[Simulation 2026-06-12 1506]] · [[00-Index|Index]]

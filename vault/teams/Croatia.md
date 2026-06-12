@@ -6,8 +6,8 @@ confederation: UEFA
 elo: 1912
 fifa_rank: 12
 host: False
-champion_pct: 1.52
-updated: 2026-06-12 09:49
+champion_pct: 1.54
+updated: 2026-06-12 15:06
 ---
 
 # Croatia
@@ -18,15 +18,15 @@ updated: 2026-06-12 09:49
 | Stage | Probability |
 | --- | --- |
 | Champion | 1.5% |
-| Reach final | 4.1% |
-| Reach semi-final | 9.5% |
-| Reach quarter-final | 20.1% |
-| Reach round of 16 | 45.1% |
-| Reach round of 32 | 90.4% |
-| Win [[Group L]] | 30.4% |
+| Reach final | 4.3% |
+| Reach semi-final | 9.7% |
+| Reach quarter-final | 20.9% |
+| Reach round of 16 | 45.9% |
+| Reach round of 32 | 90.9% |
+| Win [[Group L]] | 30.0% |
 
 ## Group L rivals
 [[England]], [[Ghana]], [[Panama]]
 
 ## Links
-Confederation [[UEFA]] · run [[Simulation 2026-06-12 0949]] · [[00-Index|Index]]
+Confederation [[UEFA]] · run [[Simulation 2026-06-12 1506]] · [[00-Index|Index]]

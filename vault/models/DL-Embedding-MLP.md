@@ -1,7 +1,7 @@
 ---
 type: model
 model: DL-Embedding-MLP
-updated: 2026-06-12 09:49
+updated: 2026-06-12 15:06
 ---
 
 # DL-Embedding-MLP

@@ -1,7 +1,7 @@
 ---
 type: group
 group: G
-updated: 2026-06-12 09:49
+updated: 2026-06-12 15:06
 ---
 
 # Group G
@@ -10,9 +10,9 @@ Teams: [[Belgium]], [[Egypt]], [[Iran]], [[New Zealand]]
 
 | Team | Win group | Reach R32 | Champion |
 | --- | --- | --- | --- |
-| [[Belgium]] | 57.8% | 93.6% | 2.8% |
-| [[Iran]] | 24.2% | 77.4% | 0.3% |
-| [[Egypt]] | 14.4% | 67.1% | 0.1% |
-| [[New Zealand]] | 3.6% | 29.1% | 0.0% |
+| [[Belgium]] | 58.4% | 93.6% | 2.9% |
+| [[Iran]] | 23.1% | 77.3% | 0.3% |
+| [[Egypt]] | 14.7% | 67.0% | 0.1% |
+| [[New Zealand]] | 3.8% | 29.3% | 0.0% |
 
-Run [[Simulation 2026-06-12 0949]] · [[00-Index|Index]]
+Run [[Simulation 2026-06-12 1506]] · [[00-Index|Index]]

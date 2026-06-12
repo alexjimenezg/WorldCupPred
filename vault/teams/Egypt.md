@@ -6,8 +6,8 @@ confederation: CAF
 elo: 1696
 fifa_rank: 48
 host: False
-champion_pct: 0.1
-updated: 2026-06-12 09:49
+champion_pct: 0.14
+updated: 2026-06-12 15:06
 ---
 
 # Egypt
@@ -19,14 +19,14 @@ updated: 2026-06-12 09:49
 | --- | --- |
 | Champion | 0.1% |
 | Reach final | 0.5% |
-| Reach semi-final | 1.7% |
-| Reach quarter-final | 6.8% |
-| Reach round of 16 | 23.3% |
-| Reach round of 32 | 67.1% |
-| Win [[Group G]] | 14.4% |
+| Reach semi-final | 1.8% |
+| Reach quarter-final | 6.9% |
+| Reach round of 16 | 24.2% |
+| Reach round of 32 | 67.0% |
+| Win [[Group G]] | 14.7% |
 
 ## Group G rivals
 [[Belgium]], [[Iran]], [[New Zealand]]
 
 ## Links
-Confederation [[CAF]] · run [[Simulation 2026-06-12 0949]] · [[00-Index|Index]]
+Confederation [[CAF]] · run [[Simulation 2026-06-12 1506]] · [[00-Index|Index]]

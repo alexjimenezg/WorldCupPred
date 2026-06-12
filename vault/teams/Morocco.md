@@ -6,8 +6,8 @@ confederation: CAF
 elo: 1827
 fifa_rank: 24
 host: False
-champion_pct: 3.48
-updated: 2026-06-12 09:49
+champion_pct: 3.57
+updated: 2026-06-12 15:06
 ---
 
 # Morocco
@@ -17,16 +17,16 @@ updated: 2026-06-12 09:49
 ## Title odds (latest)
 | Stage | Probability |
 | --- | --- |
-| Champion | 3.5% |
-| Reach final | 8.0% |
-| Reach semi-final | 16.6% |
-| Reach quarter-final | 32.4% |
-| Reach round of 16 | 53.8% |
-| Reach round of 32 | 93.4% |
-| Win [[Group C]] | 33.8% |
+| Champion | 3.6% |
+| Reach final | 7.6% |
+| Reach semi-final | 15.8% |
+| Reach quarter-final | 31.2% |
+| Reach round of 16 | 52.6% |
+| Reach round of 32 | 92.7% |
+| Win [[Group C]] | 33.3% |
 
 ## Group C rivals
 [[Brazil]], [[Haiti]], [[Scotland]]
 
 ## Links
-Confederation [[CAF]] · run [[Simulation 2026-06-12 0949]] · [[00-Index|Index]]
+Confederation [[CAF]] · run [[Simulation 2026-06-12 1506]] · [[00-Index|Index]]

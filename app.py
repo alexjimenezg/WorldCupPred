@@ -1,14 +1,18 @@
 """WorldCupPred — Streamlit operations console (FIFA World Cup 26 design).
 
 Tabs:
+  Live           ESPN live scoreboard joined to the model: in-play conditional W/D/L,
+                 stats, upcoming + played boards (auto-refreshes every minute)
   Title odds     champion / stage probabilities for all 48 teams (plotly + table)
   Groups         live standings from recorded results + advance probabilities
   Bracket        most-likely Round-of-32 line-up + road-to-title funnel per team
   History        champion odds over time (one snapshot per saved simulation)
-  Update         sync results to-date (martj42 / football-data.org) or enter manually
   Single match   any two teams (neutral toggle) -> ensemble W/D/L + scoreline heatmap
   Models         engine info, weights, and a quick walk-forward backtest
   Knowledge base browse the auto-generated Obsidian vault
+
+Results sync (sidebar / on launch) pulls from ESPN + martj42 + football-data.org;
+manual entry still exists via `python -m src.update --match ...`.
 
 Run:  streamlit run app.py
 """
@@ -85,6 +89,33 @@ st.markdown(f"""
   background: #141d33; border: 1px solid #243153; font-size: .92rem;
 }}
 .wc-tie .id {{ color: #93a4c8; font-size: .75rem; }}
+.lv-card {{
+  border-radius: 12px; padding: .8rem 1rem; margin-bottom: .8rem;
+  background: #141d33; border: 1px solid #243153;
+}}
+.lv-card.live {{ border-color: {RED}; }}
+.lv-head {{ display:flex; justify-content:space-between; color:#93a4c8;
+            font-size:.78rem; margin-bottom:.35rem; }}
+.lv-badge {{ color:#fff; background:{RED}; border-radius:6px; padding:.05rem .5rem;
+             font-weight:700; animation: lvpulse 1.6s infinite; }}
+@keyframes lvpulse {{ 50% {{ opacity:.55; }} }}
+.lv-score {{ display:flex; justify-content:space-between; align-items:center;
+             font-size:1.02rem; font-weight:600; margin-bottom:.45rem; }}
+.lv-score .sc {{ font-size:1.45rem; font-weight:800; padding:0 .6rem; }}
+.pstrip {{ display:flex; height: 22px; border-radius: 6px; overflow:hidden;
+           font-size:.72rem; font-weight:700; color:#fff; margin:.25rem 0 .15rem; }}
+.pstrip div {{ display:flex; align-items:center; justify-content:center;
+               white-space:nowrap; overflow:hidden; }}
+.pcap {{ color:#93a4c8; font-size:.74rem; margin-bottom:.4rem; }}
+.lvrow {{ display:flex; align-items:center; gap:.45rem; font-size:.78rem;
+          margin:.18rem 0; }}
+.lvrow .val {{ width:2.4rem; text-align:center; }}
+.lvrow .lab {{ width:6.8rem; text-align:center; color:#93a4c8; font-size:.72rem; }}
+.lvrow .bar {{ flex:1; height:7px; background:#243153; border-radius:4px;
+               position:relative; overflow:hidden; }}
+.lvrow .bar div {{ position:absolute; top:0; bottom:0; }}
+.lvrow .bar.h div {{ right:0; background:{GREEN}; }}
+.lvrow .bar.a div {{ left:0; background:{BLUE}; }}
 div[data-testid="stMetricValue"] {{ font-size: 1.55rem; }}
 </style>
 """, unsafe_allow_html=True)
@@ -179,6 +210,132 @@ def most_likely_bracket(table: pd.DataFrame) -> list[tuple[int, str, str]]:
     return ties
 
 
+# ---------------------------------------------------------------- live board
+@st.cache_data(ttl=45, show_spinner=False)
+def fetch_board():
+    from src.data import espn_live
+    return espn_live.fetch_scoreboard()
+
+
+def _pstrip(ph: float, pd_: float, pa: float) -> str:
+    seg = ""
+    for v, c in ((ph, GREEN), (pd_, "#64748b"), (pa, BLUE)):
+        pct = v * 100
+        label = f"{pct:.0f}%" if pct >= 8 else ""
+        seg += f'<div style="width:{pct:.1f}%;background:{c}">{label}</div>'
+    return f'<div class="pstrip">{seg}</div>'
+
+
+def _stat_rows(stats: dict) -> str:
+    rows = ""
+    for label, (hv, av) in stats.items():
+        try:
+            hf, af = float(hv), float(av)
+        except (TypeError, ValueError):
+            continue
+        tot = (hf + af) or 1.0
+        rows += (f'<div class="lvrow"><span class="val">{hv}</span>'
+                 f'<span class="bar h"><div style="width:{hf/tot*100:.0f}%"></div></span>'
+                 f'<span class="lab">{label}</span>'
+                 f'<span class="bar a"><div style="width:{af/tot*100:.0f}%"></div></span>'
+                 f'<span class="val">{av}</span></div>')
+    return rows
+
+
+def _match_card(m: dict, mp) -> str:
+    """One scoreboard card: header, score, model strip, stats."""
+    from src.models.inplay import conditional_outcome
+    home, away = m["home"], m["away"]
+    known = home in CONFIG.teams and away in CONFIG.teams
+    neutral = not (CONFIG.is_host(home) if known else False)
+    pre = mp.predict(home, away, neutral) if known else None
+
+    if m["state"] == "in":
+        badge = f'<span class="lv-badge">LIVE {m["detail"]}</span>'
+        cls, when = "lv-card live", ""
+    elif m["state"] == "post":
+        badge = "<span>FT</span>"
+        cls, when = "lv-card", f"{m['kickoff']:%b %d}"
+    else:
+        badge = "<span>Upcoming</span>"
+        cls, when = "lv-card", f"{m['kickoff']:%b %d · %H:%M} UTC"
+
+    html = (f'<div class="{cls}"><div class="lv-head">{badge}<span>{when}</span></div>'
+            f'<div class="lv-score"><span>{flag(home)}</span>'
+            f'<span class="sc">{m["home_score"]} – {m["away_score"]}</span>'
+            f'<span>{flag(away)}</span></div>')
+
+    if pre is not None:
+        if m["state"] == "in":
+            c = conditional_outcome(pre["lambda_home"], pre["lambda_away"],
+                                    home_score=m["home_score"],
+                                    away_score=m["away_score"], minute=m["minute"])
+            html += _pstrip(c["p_home"], c["p_draw"], c["p_away"])
+            html += (f'<div class="pcap">live model · projected '
+                     f'{c["top_score"][0]}–{c["top_score"][1]} · pre-match '
+                     f'{pre["p_home"]*100:.0f}/{pre["p_draw"]*100:.0f}/'
+                     f'{pre["p_away"]*100:.0f}</div>')
+        elif m["state"] == "pre":
+            html += _pstrip(pre["p_home"], pre["p_draw"], pre["p_away"])
+            html += (f'<div class="pcap">model: {pre["p_home"]*100:.0f}% / '
+                     f'{pre["p_draw"]*100:.0f}% / {pre["p_away"]*100:.0f}%</div>')
+        else:
+            html += (f'<div class="pcap">model had it '
+                     f'{pre["p_home"]*100:.0f}% / {pre["p_draw"]*100:.0f}% / '
+                     f'{pre["p_away"]*100:.0f}%</div>')
+
+    if m["stats"] and m["state"] != "pre":
+        html += _stat_rows(m["stats"])
+    return html + "</div>"
+
+
+@st.fragment(run_every=60)
+def live_board():
+    try:
+        board = fetch_board()
+    except Exception as exc:
+        st.warning(f"Live feed unreachable right now: {exc}")
+        return
+    mp = load_predictor(False)
+    live = [m for m in board if m["state"] == "in"]
+    done = [m for m in board if m["state"] == "post"]
+    pre = [m for m in board if m["state"] == "pre"]
+
+    if live:
+        st.markdown(f"#### 🔴 In play now ({len(live)})")
+        cols = st.columns(min(2, len(live)))
+        for i, m in enumerate(live):
+            cols[i % len(cols)].markdown(_match_card(m, mp), unsafe_allow_html=True)
+        st.caption("Win-probability strip is the model conditional on the current "
+                   "score and minute (green = home, grey = draw, blue = away). "
+                   "Auto-refreshes every minute.")
+    else:
+        st.info("No match in play right now — auto-refreshing every minute.")
+
+    # nudge when a final result hasn't been folded into the odds yet
+    store_keys = {(frozenset((r.home, r.away))) for r in _store().results}
+    missing = [m for m in done
+               if frozenset((m["home"], m["away"])) not in store_keys
+               and m["home"] in CONFIG.teams and m["away"] in CONFIG.teams]
+    if missing:
+        st.warning(f"{len(missing)} finished match(es) not yet in the odds — "
+                   "sync from the sidebar to refresh the simulation.")
+
+    if pre:
+        st.markdown("#### ⏭️ Next up")
+        nxt = pre[:6]
+        cols = st.columns(3)
+        for i, m in enumerate(nxt):
+            cols[i % 3].markdown(_match_card(m, mp), unsafe_allow_html=True)
+
+    if done:
+        st.markdown(f"#### ✅ Played ({len(done)})")
+        for i, m in enumerate(reversed(done)):
+            if i % 3 == 0:
+                cols = st.columns(3)
+            cols[i % 3].markdown(_match_card(m, mp), unsafe_allow_html=True)
+
+
 # ---------------------------------------------------------------- header
 st.markdown("""
 <div class="wc-hero">
@@ -222,12 +379,16 @@ if auto and not st.session_state.get("_auto_synced"):
         st.toast(f"Auto-sync failed: {exc}")
 
 # ---------------------------------------------------------------- tabs
-(tab_odds, tab_groups, tab_bracket, tab_history,
- tab_update, tab_match, tab_models, tab_kb) = st.tabs(
-    ["🏆 Title odds", "📊 Groups", "🛣️ Bracket", "📈 History",
-     "✏️ Update", "⚔️ Single match", "🧠 Models", "📚 Knowledge base"])
+(tab_live, tab_odds, tab_groups, tab_bracket, tab_history,
+ tab_match, tab_models, tab_kb) = st.tabs(
+    ["🔴 Live", "🏆 Title odds", "📊 Groups", "🛣️ Bracket", "📈 History",
+     "⚔️ Single match", "🧠 Models", "📚 Knowledge base"])
 
 table = load_table()
+
+# ---------------------------------------------------------------- Live
+with tab_live:
+    live_board()
 
 # ---------------------------------------------------------------- Title odds
 with tab_odds:
@@ -396,78 +557,6 @@ with tab_history:
         if n_snaps < 2:
             st.caption("Only one snapshot so far — the lines appear once more "
                        "simulations are recorded.")
-
-# ---------------------------------------------------------------- Update
-with tab_update:
-    st.subheader("⬇ Sync results to-date")
-    st.caption("Pulls every finished match from martj42/international_results (no key "
-               "needed) and football-data.org (if `FOOTBALL_DATA_API_KEY` is set), then "
-               "refits Elo + Dixon-Coles and re-simulates the remaining fixtures.")
-    if st.button("Sync now", type="primary"):
-        run_sync(int(sync_sims))
-
-    st.divider()
-    st.subheader("Record a result manually")
-    st.caption("Refits Elo + Dixon-Coles on the new result and re-simulates the remaining "
-               "fixtures (already-played matches are held fixed).")
-
-    mode = st.radio("Match type", ["Group stage", "Knockout"], horizontal=True)
-    if mode == "Group stage":
-        g = st.selectbox("Group", list(CONFIG.groups), key="upd_group")
-        teams = CONFIG.groups[g]
-        pairs = [(a, b) for i, a in enumerate(teams) for b in teams[i + 1:]]
-        labels = [f"{flag(a)} vs {flag(b)}" for a, b in pairs]
-        pick = st.selectbox("Fixture", labels, key="upd_fixture")
-        home, away = pairs[labels.index(pick)]
-        stage = "group"
-    else:
-        c1, c2 = st.columns(2)
-        home = c1.selectbox("Home / Team A", CONFIG.teams, key="ko_home",
-                            format_func=flag)
-        away = c2.selectbox("Away / Team B", CONFIG.teams, index=1, key="ko_away",
-                            format_func=flag)
-        stage = st.selectbox("Round", ["R32", "R16", "QF", "SF", "final"])
-
-    c1, c2, c3 = st.columns([2, 1, 2])
-    hg = c1.number_input(f"{home} goals", min_value=0, max_value=20, value=1, step=1)
-    c2.markdown("<div style='text-align:center;padding-top:1.9rem'>—</div>",
-                unsafe_allow_html=True)
-    ag = c3.number_input(f"{away} goals", min_value=0, max_value=20, value=0, step=1)
-
-    n_sims = st.select_slider("Simulations", options=[5000, 10000, 20000, 50000],
-                              value=20000)
-    retrain_ml = st.checkbox("Also retrain ML model (slower)", value=False)
-
-    if st.button("Record result & re-simulate", type="primary", width='stretch'):
-        if home == away:
-            st.error("Pick two different teams.")
-        else:
-            from src import update as upd
-            with st.spinner(f"Recording {home} {hg}-{ag} {away}, refitting and "
-                            f"running {n_sims:,} simulations…"):
-                store = upd.ResultsStore()
-                store.add(home, away, int(hg), int(ag), stage=stage)
-                new = upd.recompute(retrain_ml=retrain_ml, n_sims=int(n_sims),
-                                    verbose=False)
-            load_predictor.clear()
-            st.success(f"Recorded {home} {hg}-{ag} {away} and refreshed odds.")
-            show = new.head(10).copy()
-            show["champion"] = (show["champion"] * 100).round(1)
-            st.dataframe(show[["team", "group", "champion"]], hide_index=True,
-                         width='stretch')
-
-    st.divider()
-    store = _store()
-    st.write(f"**{len(store)} results recorded.**")
-    if len(store):
-        st.code(store.summary())
-        cc1, cc2 = st.columns(2)
-        if cc1.button("Undo last"):
-            store.undo_last()
-            st.rerun()
-        if cc2.button("Reset all results"):
-            store.clear()
-            st.rerun()
 
 # ---------------------------------------------------------------- Single match
 with tab_match:

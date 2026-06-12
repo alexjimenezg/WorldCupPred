@@ -7,7 +7,7 @@ elo: 1548
 fifa_rank: 73
 host: False
 champion_pct: 0.0
-updated: 2026-06-12 09:49
+updated: 2026-06-12 15:06
 ---
 
 # Haiti
@@ -21,12 +21,12 @@ updated: 2026-06-12 09:49
 | Reach final | 0.0% |
 | Reach semi-final | 0.0% |
 | Reach quarter-final | 0.3% |
-| Reach round of 16 | 2.0% |
-| Reach round of 32 | 13.8% |
-| Win [[Group C]] | 0.7% |
+| Reach round of 16 | 2.2% |
+| Reach round of 32 | 14.4% |
+| Win [[Group C]] | 1.0% |
 
 ## Group C rivals
 [[Brazil]], [[Morocco]], [[Scotland]]
 
 ## Links
-Confederation [[CONCACAF]] · run [[Simulation 2026-06-12 0949]] · [[00-Index|Index]]
+Confederation [[CONCACAF]] · run [[Simulation 2026-06-12 1506]] · [[00-Index|Index]]

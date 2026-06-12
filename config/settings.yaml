@@ -25,6 +25,8 @@ data_sources:
   odds_sport_key: "soccer_fifa_world_cup_winner"
   football_data_base: "https://api.football-data.org/v4"
   football_data_competition: "WC"
+  # ESPN public scoreboard (keyless): live scores, match minute, in-game stats.
+  espn_scoreboard: "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard"
   cache_max_age_days: 1          # re-fetch raw sources older than this
 
 elo:

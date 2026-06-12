@@ -1,7 +1,7 @@
 ---
 type: group
 group: D
-updated: 2026-06-12 09:49
+updated: 2026-06-12 15:06
 ---
 
 # Group D
@@ -10,9 +10,9 @@ Teams: [[United States]], [[Paraguay]], [[Australia]], [[Turkey]]
 
 | Team | Win group | Reach R32 | Champion |
 | --- | --- | --- | --- |
-| [[Turkey]] | 29.7% | 74.3% | 1.0% |
-| [[Paraguay]] | 23.6% | 68.6% | 0.5% |
-| [[Australia]] | 20.4% | 64.7% | 0.3% |
-| [[United States]] | 26.2% | 67.9% | 0.1% |
+| [[Turkey]] | 30.5% | 73.9% | 0.8% |
+| [[Paraguay]] | 23.5% | 68.9% | 0.4% |
+| [[Australia]] | 20.5% | 64.8% | 0.3% |
+| [[United States]] | 25.6% | 67.8% | 0.1% |
 
-Run [[Simulation 2026-06-12 0949]] · [[00-Index|Index]]
+Run [[Simulation 2026-06-12 1506]] · [[00-Index|Index]]

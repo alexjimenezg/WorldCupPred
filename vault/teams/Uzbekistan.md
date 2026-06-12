@@ -7,7 +7,7 @@ elo: 1714
 fifa_rank: 42
 host: False
 champion_pct: 0.04
-updated: 2026-06-12 09:49
+updated: 2026-06-12 15:06
 ---
 
 # Uzbekistan
@@ -19,14 +19,14 @@ updated: 2026-06-12 09:49
 | --- | --- |
 | Champion | 0.0% |
 | Reach final | 0.2% |
-| Reach semi-final | 0.8% |
-| Reach quarter-final | 3.1% |
-| Reach round of 16 | 11.7% |
-| Reach round of 32 | 40.4% |
-| Win [[Group K]] | 5.1% |
+| Reach semi-final | 0.9% |
+| Reach quarter-final | 3.4% |
+| Reach round of 16 | 12.0% |
+| Reach round of 32 | 41.2% |
+| Win [[Group K]] | 5.4% |
 
 ## Group K rivals
 [[Portugal]], [[DR Congo]], [[Colombia]]
 
 ## Links
-Confederation [[AFC]] · run [[Simulation 2026-06-12 0949]] · [[00-Index|Index]]
+Confederation [[AFC]] · run [[Simulation 2026-06-12 1506]] · [[00-Index|Index]]

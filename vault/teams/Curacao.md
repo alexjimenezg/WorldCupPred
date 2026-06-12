@@ -7,7 +7,7 @@ elo: 1600
 fifa_rank: n/a
 host: False
 champion_pct: 0.0
-updated: 2026-06-12 09:49
+updated: 2026-06-12 15:06
 ---
 
 # Curacao
@@ -20,13 +20,13 @@ updated: 2026-06-12 09:49
 | Champion | 0.0% |
 | Reach final | 0.0% |
 | Reach semi-final | 0.0% |
-| Reach quarter-final | 0.0% |
+| Reach quarter-final | 0.1% |
 | Reach round of 16 | 1.2% |
-| Reach round of 32 | 9.5% |
+| Reach round of 32 | 9.2% |
 | Win [[Group E]] | 0.5% |
 
 ## Group E rivals
 [[Germany]], [[Ivory Coast]], [[Ecuador]]
 
 ## Links
-Confederation [[CONCACAF]] · run [[Simulation 2026-06-12 0949]] · [[00-Index|Index]]
+Confederation [[CONCACAF]] · run [[Simulation 2026-06-12 1506]] · [[00-Index|Index]]

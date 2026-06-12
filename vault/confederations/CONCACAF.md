@@ -3,7 +3,7 @@ type: confederation
 confederation: CONCACAF
 n_teams: 6
 combined_champion_pct: 1.8
-updated: 2026-06-12 09:49
+updated: 2026-06-12 15:06
 ---
 
 # CONCACAF
@@ -13,10 +13,10 @@ updated: 2026-06-12 09:49
 | Team | Group | Champion |
 | --- | --- | --- |
 | [[Mexico]] | [[Group A]] | 1.3% |
-| [[Canada]] | [[Group B]] | 0.4% |
+| [[Canada]] | [[Group B]] | 0.3% |
 | [[United States]] | [[Group D]] | 0.1% |
+| [[Panama]] | [[Group L]] | 0.0% |
 | [[Haiti]] | [[Group C]] | 0.0% |
 | [[Curacao]] | [[Group E]] | 0.0% |
-| [[Panama]] | [[Group L]] | 0.0% |
 
 [[00-Index|Index]]

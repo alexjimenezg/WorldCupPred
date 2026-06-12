@@ -6,8 +6,8 @@ confederation: CONCACAF
 elo: 1730
 fifa_rank: 38
 host: False
-champion_pct: 0.0
-updated: 2026-06-12 09:49
+champion_pct: 0.03
+updated: 2026-06-12 15:06
 ---
 
 # Panama
@@ -18,15 +18,15 @@ updated: 2026-06-12 09:49
 | Stage | Probability |
 | --- | --- |
 | Champion | 0.0% |
-| Reach final | 0.0% |
-| Reach semi-final | 0.3% |
-| Reach quarter-final | 2.4% |
+| Reach final | 0.1% |
+| Reach semi-final | 0.5% |
+| Reach quarter-final | 2.2% |
 | Reach round of 16 | 9.1% |
-| Reach round of 32 | 41.6% |
-| Win [[Group L]] | 3.7% |
+| Reach round of 32 | 42.2% |
+| Win [[Group L]] | 4.0% |
 
 ## Group L rivals
 [[England]], [[Croatia]], [[Ghana]]
 
 ## Links
-Confederation [[CONCACAF]] · run [[Simulation 2026-06-12 0949]] · [[00-Index|Index]]
+Confederation [[CONCACAF]] · run [[Simulation 2026-06-12 1506]] · [[00-Index|Index]]

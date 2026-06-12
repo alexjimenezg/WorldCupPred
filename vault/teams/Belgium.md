@@ -6,8 +6,8 @@ confederation: UEFA
 elo: 1894
 fifa_rank: 15
 host: False
-champion_pct: 2.78
-updated: 2026-06-12 09:49
+champion_pct: 2.86
+updated: 2026-06-12 15:06
 ---
 
 # Belgium
@@ -17,16 +17,16 @@ updated: 2026-06-12 09:49
 ## Title odds (latest)
 | Stage | Probability |
 | --- | --- |
-| Champion | 2.8% |
-| Reach final | 6.6% |
-| Reach semi-final | 14.7% |
-| Reach quarter-final | 34.4% |
-| Reach round of 16 | 62.1% |
+| Champion | 2.9% |
+| Reach final | 6.7% |
+| Reach semi-final | 14.4% |
+| Reach quarter-final | 33.6% |
+| Reach round of 16 | 61.1% |
 | Reach round of 32 | 93.6% |
-| Win [[Group G]] | 57.8% |
+| Win [[Group G]] | 58.4% |
 
 ## Group G rivals
 [[Egypt]], [[Iran]], [[New Zealand]]
 
 ## Links
-Confederation [[UEFA]] · run [[Simulation 2026-06-12 0949]] · [[00-Index|Index]]
+Confederation [[UEFA]] · run [[Simulation 2026-06-12 1506]] · [[00-Index|Index]]
