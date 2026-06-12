@@ -116,6 +116,25 @@ st.markdown(f"""
 .lvrow .bar div {{ position:absolute; top:0; bottom:0; }}
 .lvrow .bar.h div {{ right:0; background:{GREEN}; }}
 .lvrow .bar.a div {{ left:0; background:{BLUE}; }}
+.bk-wrap {{ overflow-x:auto; padding-bottom:.5rem; }}
+.bk {{ display:flex; gap:.45rem; min-width:1240px; align-items:stretch; }}
+.bk-col {{ display:flex; flex-direction:column; justify-content:space-around;
+           flex:1; min-width:124px; }}
+.bk-rnd {{ text-align:center; color:#93a4c8; font-size:.72rem; font-weight:700;
+           letter-spacing:.06em; margin-bottom:.2rem; }}
+.bk-tie {{ background:#141d33; border:1px solid #243153; border-radius:8px;
+           padding:.25rem .45rem; margin:.16rem 0; font-size:.76rem; }}
+.bk-tie .tm {{ display:flex; justify-content:space-between; gap:.3rem;
+               white-space:nowrap; }}
+.bk-tie .tm.w {{ font-weight:700; }}
+.bk-tie .tm.l {{ color:#64748b; }}
+.bk-tie .pp {{ color:#93a4c8; font-weight:400; }}
+.bk-id {{ color:#5b6a8c; font-size:.6rem; }}
+.bk-champ {{ text-align:center; background:linear-gradient(135deg,#1d2a4d,#141d33);
+             border:1px solid {GREEN}; border-radius:10px; padding:.5rem .4rem;
+             margin-bottom:.5rem; }}
+.bk-champ .c {{ font-size:1.0rem; font-weight:800; }}
+.bk-champ .s {{ color:#93a4c8; font-size:.7rem; }}
 div[data-testid="stMetricValue"] {{ font-size: 1.55rem; }}
 </style>
 """, unsafe_allow_html=True)
@@ -208,6 +227,68 @@ def most_likely_bracket(table: pd.DataFrame) -> list[tuple[int, str, str]]:
         away = thirds[alloc[tie_id]] if as_ == "3" else slot[as_]
         ties.append((tie_id, slot[hs], away))
     return ties
+
+
+def predicted_bracket(table: pd.DataFrame) -> dict[int, dict]:
+    """Play the modal bracket out with the ensemble: at every node the favorite
+    advances. p = P(side wins the tie | the matchup happens), draws resolved by
+    the same conditional used for ET/penalties in the simulator."""
+    from src.simulation import tournament_2026 as T
+    mp = load_predictor(False)
+    games: dict[int, dict] = {}
+    winners: dict[int, str] = {}
+
+    def play(tid: int, home: str, away: str) -> None:
+        out = mp.predict(home, away, True)  # knockouts at neutral venues
+        p = out["p_home"] / (out["p_home"] + out["p_away"])
+        winners[tid] = home if p >= 0.5 else away
+        games[tid] = {"home": home, "away": away, "p": p, "winner": winners[tid]}
+
+    for tid, home, away in most_likely_bracket(table):
+        play(tid, home, away)
+    for bracket in (T.BRACKET_R16, T.BRACKET_QF, T.BRACKET_SF):
+        for tid, s1, s2 in bracket:
+            play(tid, winners[s1], winners[s2])
+    f_id, s1, s2 = T.FINAL
+    play(f_id, winners[s1], winners[s2])
+    return games
+
+
+# column layout of the official bracket: left half feeds SF 101, right half SF 102
+_BK_COLS: list[tuple[str, list[int]]] = [
+    ("R32", [74, 77, 73, 75, 83, 84, 81, 82]),
+    ("R16", [89, 90, 93, 94]),
+    ("QF", [97, 98]),
+    ("SF", [101]),
+    ("FINAL", [104]),
+    ("SF", [102]),
+    ("QF", [99, 100]),
+    ("R16", [91, 92, 95, 96]),
+    ("R32", [76, 78, 79, 80, 86, 88, 85, 87]),
+]
+
+
+def bracket_html(games: dict[int, dict], champ_prob: float) -> str:
+    def tie(tid: int) -> str:
+        g = games[tid]
+        rows = ""
+        for team, p in ((g["home"], g["p"]), (g["away"], 1 - g["p"])):
+            cls = "w" if team == g["winner"] else "l"
+            rows += (f'<div class="tm {cls}"><span>{flag(team)}</span>'
+                     f'<span class="pp">{p*100:.0f}%</span></div>')
+        return f'<div class="bk-tie"><div class="bk-id">M{tid}</div>{rows}</div>'
+
+    cols = ""
+    for label, tids in _BK_COLS:
+        body = "".join(tie(t) for t in tids)
+        if label == "FINAL":
+            champ = games[104]["winner"]
+            body = (f'<div class="bk-champ"><div class="s">PREDICTED CHAMPION</div>'
+                    f'<div class="c">🏆 {flag(champ)}</div>'
+                    f'<div class="s">{champ_prob*100:.1f}% of all simulations</div>'
+                    f'</div>') + body
+        cols += f'<div class="bk-col"><div class="bk-rnd">{label}</div>{body}</div>'
+    return f'<div class="bk-wrap"><div class="bk">{cols}</div></div>'
 
 
 # ---------------------------------------------------------------- live board
@@ -505,21 +586,16 @@ with tab_bracket:
     if table is None:
         st.info("No simulation yet.")
     else:
-        st.subheader("Most likely Round of 32")
-        st.caption("Illustrative line-up: each group ranked by P(win group); the 8 most "
-                   "probable third-placed sides allocated with FIFA's official slot table. "
-                   "The simulation itself randomizes every group, this is just the modal view.")
-        ties = most_likely_bracket(table)
-        half1, half2 = ties[:8], ties[8:]
-        c1, c2 = st.columns(2)
-        for col, half, title in ((c1, half1, "Left half"), (c2, half2, "Right half")):
-            with col:
-                st.markdown(f"**{title}**")
-                for tie_id, home, away in half:
-                    col.markdown(
-                        f"""<div class="wc-tie"><span class="id">Match {tie_id}</span><br>
-                        {flag(home)} &nbsp;vs&nbsp; {flag(away)}</div>""",
-                        unsafe_allow_html=True)
+        st.subheader("The bracket, as the model predicts it")
+        st.caption("Modal wallchart: groups resolved by P(win group) with FIFA's official "
+                   "third-place slot allocation, then the ensemble's favorite advances at "
+                   "every node (percentages = win the tie if it happens, draws resolved "
+                   "by the ET/penalty model). The title odds integrate over *all* paths — "
+                   "this chart shows the single most likely one.")
+        games = predicted_bracket(table)
+        champ = games[104]["winner"]
+        champ_prob = float(table.set_index("team").loc[champ, "champion"])
+        st.markdown(bracket_html(games, champ_prob), unsafe_allow_html=True)
 
         st.divider()
         st.subheader("Road to the title")
