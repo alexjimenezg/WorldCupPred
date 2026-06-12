@@ -21,3 +21,14 @@ I0000 00:00:1781249418.197674   20140 port.cc:153] oneDNN custom operations are 
 WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
 I0000 00:00:1781249421.828367   20140 port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
 WARNING:tensorflow:TensorFlow GPU support is not available on native Windows for TensorFlow >= 2.11. Even if CUDA/cuDNN are installed, GPU will not be used. Please use WSL2 or the TensorFlow-DirectML plugin.
+train<= 2023-01-01  test (2571 competitive matches) 2023-01-02 -> 2025-12-31
+                n    rps  brier  log_loss  accuracy
+model                                              
+baseline     2571 0.2337 0.6393    1.0576    0.4621
+elo          2571 0.1696 0.5063    0.8612    0.6103
+dixon_coles  2571 0.1694 0.5031    0.8662    0.6048
+ml           2571 0.1708 0.5100    0.8692    0.5978
+dl           2571 0.1690 0.5043    0.8597    0.6091
+ensemble     2571 0.1670 0.4984    0.8492    0.6087
+best: ensemble  (RPS 0.1670, +28.5% vs baseline)
+exit 0
