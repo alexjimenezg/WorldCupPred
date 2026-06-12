@@ -54,6 +54,16 @@ class Sampler(Protocol):
 _ROUND_ROBIN = [(0, 1), (2, 3), (0, 2), (1, 3), (0, 3), (1, 2)]
 
 
+def _pair_lookup(fixed: dict | None, home: str, away: str) -> tuple[int, int] | None:
+    """Find a played result for this matchup, order-agnostic (goals swap if reversed)."""
+    if not fixed:
+        return None
+    if (home, away) in fixed:
+        return fixed[(home, away)]
+    rev = fixed.get((away, home))
+    return (rev[1], rev[0]) if rev is not None else None
+
+
 def _is_host(team: str) -> bool:
     return CONFIG.is_host(team)
 
@@ -87,14 +97,8 @@ def simulate_group(teams: list[str], sampler: Sampler, rng: np.random.Generator,
     for ii, jj in _ROUND_ROBIN:
         ta, tb = teams[ii], teams[jj]
         home, away, neutral = _venue_home(ta, tb)
-        hg = ag = None
-        if fixed is not None:
-            got = fixed.get((home, away)) or (
-                (lambda r: (r[1], r[0]) if r else None)(fixed.get((away, home))))
-            if got is not None:
-                hg, ag = got
-        if hg is None:
-            hg, ag = sampler.sample_score(home, away, neutral)
+        got = _pair_lookup(fixed, home, away)
+        hg, ag = got if got is not None else sampler.sample_score(home, away, neutral)
         results[(home, away)] = (hg, ag)
         rh, ra = rows[home], rows[away]
         rh.gf += hg; rh.ga += ag; ra.gf += ag; ra.ga += hg
@@ -180,12 +184,10 @@ def select_best_thirds(thirds: dict[str, str], stats: dict[str, TeamRow]
 # Knockouts
 # ---------------------------------------------------------------------------
 def _play_knockout(home: str, away: str, sampler: Sampler, rng: np.random.Generator,
-                   fixed: tuple[int, int] | None = None) -> str:
+                   fixed_ko: dict | None = None) -> str:
     neutral = True  # knockouts at neutral venues
-    if fixed is not None:
-        hg, ag = fixed
-    else:
-        hg, ag = sampler.sample_score(home, away, neutral)
+    got = _pair_lookup(fixed_ko, home, away)
+    hg, ag = got if got is not None else sampler.sample_score(home, away, neutral)
     if hg > ag:
         return home
     if ag > hg:
@@ -204,8 +206,8 @@ class SimResult:
 
 def simulate_tournament(sampler: Sampler, rng: np.random.Generator,
                         fixed: dict | None = None) -> SimResult:
-    """One full tournament. `fixed` may contain played group scores keyed by (home,away)
-    and knockout results keyed by tie_id -> (home_goals, away_goals)."""
+    """One full tournament. `fixed` may contain played group scores and knockout results,
+    both keyed by (home_team, away_team) -> (home_goals, away_goals) (order-agnostic)."""
     fixed = fixed or {}
     fixed_groups = fixed.get("groups")
     fixed_ko = fixed.get("knockouts", {})
@@ -237,7 +239,7 @@ def simulate_tournament(sampler: Sampler, rng: np.random.Generator,
     for tie_id, hs, as_ in BRACKET_R32:
         home = slot_team[hs]
         away = slot_team[as_] if as_ != "3" else slot_team[f"3@{tie_id}"]
-        w = _play_knockout(home, away, sampler, rng, fixed_ko.get(tie_id))
+        w = _play_knockout(home, away, sampler, rng, fixed_ko)
         winners[tie_id] = w
         for t in (home, away):
             reached[t] = "R32"
@@ -250,7 +252,7 @@ def simulate_tournament(sampler: Sampler, rng: np.random.Generator,
     f_id, s1, s2 = FINAL
     fa, fb = winners[s1], winners[s2]
     reached[fa] = reached[fb] = "final"
-    champ = _play_knockout(fa, fb, sampler, rng, fixed_ko.get(f_id))
+    champ = _play_knockout(fa, fb, sampler, rng, fixed_ko)
     reached[champ] = "champion"
     group_winners = [standings[g][0] for g in CONFIG.groups]
     return SimResult(champion=champ, finalists=(fa, fb), reached=reached,
@@ -261,7 +263,7 @@ def _run_round(bracket, winners, slot_team, sampler, rng, fixed_ko, reached, nex
     new = dict(winners)
     for tie_id, a_src, b_src in bracket:
         home, away = winners[a_src], winners[b_src]
-        w = _play_knockout(home, away, sampler, rng, fixed_ko.get(tie_id))
+        w = _play_knockout(home, away, sampler, rng, fixed_ko)
         new[tie_id] = w
         reached[w] = next_stage
     return new
