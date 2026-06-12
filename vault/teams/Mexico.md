@@ -6,8 +6,8 @@ confederation: CONCACAF
 elo: 1881
 fifa_rank: 18
 host: True
-champion_pct: 0.97
-updated: 2026-06-12 01:36
+champion_pct: 1.01
+updated: 2026-06-12 01:45
 ---
 
 # Mexico
@@ -18,15 +18,15 @@ updated: 2026-06-12 01:36
 | Stage | Probability |
 | --- | --- |
 | Champion | 1.0% |
-| Reach final | 2.9% |
+| Reach final | 3.0% |
 | Reach semi-final | 8.1% |
 | Reach quarter-final | 22.0% |
-| Reach round of 16 | 52.5% |
-| Reach round of 32 | 92.8% |
-| Win [[Group A]] | 57.9% |
+| Reach round of 16 | 53.4% |
+| Reach round of 32 | 93.3% |
+| Win [[Group A]] | 57.4% |
 
 ## Group A rivals
 [[South Africa]], [[South Korea]], [[Czech Republic]]
 
 ## Links
-Confederation [[CONCACAF]] · run [[Simulation 2026-06-12 0136]] · [[00-Index|Index]]
+Confederation [[CONCACAF]] · run [[Simulation 2026-06-12 0145]] · [[00-Index|Index]]

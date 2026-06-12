@@ -6,8 +6,8 @@ confederation: UEFA
 elo: 1948
 fifa_rank: 8
 host: False
-champion_pct: 3.25
-updated: 2026-06-12 01:36
+champion_pct: 3.38
+updated: 2026-06-12 01:45
 ---
 
 # Netherlands
@@ -17,16 +17,16 @@ updated: 2026-06-12 01:36
 ## Title odds (latest)
 | Stage | Probability |
 | --- | --- |
-| Champion | 3.2% |
-| Reach final | 7.2% |
-| Reach semi-final | 15.1% |
-| Reach quarter-final | 30.9% |
-| Reach round of 16 | 50.1% |
-| Reach round of 32 | 92.0% |
+| Champion | 3.4% |
+| Reach final | 7.5% |
+| Reach semi-final | 15.6% |
+| Reach quarter-final | 31.0% |
+| Reach round of 16 | 49.9% |
+| Reach round of 32 | 92.1% |
 | Win [[Group F]] | 49.6% |
 
 ## Group F rivals
 [[Japan]], [[Sweden]], [[Tunisia]]
 
 ## Links
-Confederation [[UEFA]] · run [[Simulation 2026-06-12 0136]] · [[00-Index|Index]]
+Confederation [[UEFA]] · run [[Simulation 2026-06-12 0145]] · [[00-Index|Index]]

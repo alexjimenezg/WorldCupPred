@@ -6,8 +6,8 @@ confederation: UEFA
 elo: 1782
 fifa_rank: 26
 host: False
-champion_pct: 0.2
-updated: 2026-06-12 01:36
+champion_pct: 0.22
+updated: 2026-06-12 01:45
 ---
 
 # Scotland
@@ -18,15 +18,15 @@ updated: 2026-06-12 01:36
 | Stage | Probability |
 | --- | --- |
 | Champion | 0.2% |
-| Reach final | 0.7% |
-| Reach semi-final | 2.6% |
-| Reach quarter-final | 9.4% |
-| Reach round of 16 | 25.6% |
-| Reach round of 32 | 66.9% |
-| Win [[Group C]] | 9.4% |
+| Reach final | 0.8% |
+| Reach semi-final | 2.7% |
+| Reach quarter-final | 9.1% |
+| Reach round of 16 | 24.8% |
+| Reach round of 32 | 67.1% |
+| Win [[Group C]] | 9.5% |
 
 ## Group C rivals
 [[Brazil]], [[Morocco]], [[Haiti]]
 
 ## Links
-Confederation [[UEFA]] · run [[Simulation 2026-06-12 0136]] · [[00-Index|Index]]
+Confederation [[UEFA]] · run [[Simulation 2026-06-12 0145]] · [[00-Index|Index]]

@@ -6,8 +6,8 @@ confederation: CONMEBOL
 elo: 1892
 fifa_rank: 16
 host: False
-champion_pct: 1.34
-updated: 2026-06-12 01:36
+champion_pct: 1.38
+updated: 2026-06-12 01:45
 ---
 
 # Uruguay
@@ -17,16 +17,16 @@ updated: 2026-06-12 01:36
 ## Title odds (latest)
 | Stage | Probability |
 | --- | --- |
-| Champion | 1.3% |
+| Champion | 1.4% |
 | Reach final | 3.9% |
-| Reach semi-final | 9.7% |
-| Reach quarter-final | 19.6% |
-| Reach round of 16 | 35.4% |
-| Reach round of 32 | 86.1% |
-| Win [[Group H]] | 16.0% |
+| Reach semi-final | 9.8% |
+| Reach quarter-final | 20.0% |
+| Reach round of 16 | 35.6% |
+| Reach round of 32 | 86.5% |
+| Win [[Group H]] | 17.2% |
 
 ## Group H rivals
 [[Spain]], [[Cape Verde]], [[Saudi Arabia]]
 
 ## Links
-Confederation [[CONMEBOL]] · run [[Simulation 2026-06-12 0136]] · [[00-Index|Index]]
+Confederation [[CONMEBOL]] · run [[Simulation 2026-06-12 0145]] · [[00-Index|Index]]

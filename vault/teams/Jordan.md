@@ -6,8 +6,8 @@ confederation: AFC
 elo: 1680
 fifa_rank: 52
 host: False
-champion_pct: 0.0
-updated: 2026-06-12 01:36
+champion_pct: 0.01
+updated: 2026-06-12 01:45
 ---
 
 # Jordan
@@ -18,15 +18,15 @@ updated: 2026-06-12 01:36
 | Stage | Probability |
 | --- | --- |
 | Champion | 0.0% |
-| Reach final | 0.0% |
+| Reach final | 0.1% |
 | Reach semi-final | 0.3% |
-| Reach quarter-final | 1.5% |
-| Reach round of 16 | 4.6% |
-| Reach round of 32 | 22.9% |
-| Win [[Group J]] | 2.0% |
+| Reach quarter-final | 1.2% |
+| Reach round of 16 | 4.7% |
+| Reach round of 32 | 23.5% |
+| Win [[Group J]] | 2.2% |
 
 ## Group J rivals
 [[Argentina]], [[Algeria]], [[Austria]]
 
 ## Links
-Confederation [[AFC]] · run [[Simulation 2026-06-12 0136]] · [[00-Index|Index]]
+Confederation [[AFC]] · run [[Simulation 2026-06-12 0145]] · [[00-Index|Index]]

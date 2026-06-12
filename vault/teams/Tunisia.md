@@ -6,8 +6,8 @@ confederation: CAF
 elo: 1628
 fifa_rank: 58
 host: False
-champion_pct: 0.03
-updated: 2026-06-12 01:36
+champion_pct: 0.02
+updated: 2026-06-12 01:45
 ---
 
 # Tunisia
@@ -18,15 +18,15 @@ updated: 2026-06-12 01:36
 | Stage | Probability |
 | --- | --- |
 | Champion | 0.0% |
-| Reach final | 0.2% |
-| Reach semi-final | 0.7% |
+| Reach final | 0.1% |
+| Reach semi-final | 0.6% |
 | Reach quarter-final | 2.7% |
-| Reach round of 16 | 10.1% |
-| Reach round of 32 | 38.8% |
-| Win [[Group F]] | 5.2% |
+| Reach round of 16 | 9.7% |
+| Reach round of 32 | 37.4% |
+| Win [[Group F]] | 4.9% |
 
 ## Group F rivals
 [[Netherlands]], [[Japan]], [[Sweden]]
 
 ## Links
-Confederation [[CAF]] · run [[Simulation 2026-06-12 0136]] · [[00-Index|Index]]
+Confederation [[CAF]] · run [[Simulation 2026-06-12 0145]] · [[00-Index|Index]]

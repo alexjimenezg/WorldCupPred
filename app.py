@@ -137,6 +137,20 @@ with tab_update:
                          width='stretch')
 
     st.divider()
+    from src.data import live_scores
+    if live_scores.available():
+        if st.button("⬇ Import finished results from football-data.org"):
+            with st.spinner("Fetching live results and refitting…"):
+                from src import update as upd
+                n_new = live_scores.import_finished_to_store()
+                if n_new:
+                    upd.recompute(n_sims=20000, verbose=False)
+                    load_predictor.clear()
+            st.success(f"Imported {n_new} finished match(es) and refreshed odds.")
+            st.rerun()
+    else:
+        st.caption("Set `FOOTBALL_DATA_API_KEY` in .env to auto-import live results.")
+
     store = _store()
     st.write(f"**{len(store)} results recorded.**")
     if len(store):
@@ -205,6 +219,22 @@ with tab_models:
         with st.spinner("Training on the cutoff and scoring the holdout…"):
             res = backtest(train_end, "2025-12-31", include_ml=True, verbose=False)
         st.dataframe(res.round(4), width='stretch')
+
+    st.divider()
+    st.write("**Betting-odds benchmark** (de-vigged implied champion probability vs ours):")
+    from src.data import odds_api
+    if odds_api.available():
+        bench = odds_api.benchmark_vs_simulation()
+        if bench.empty:
+            st.info("No outright market returned right now.")
+        else:
+            b = bench.copy()
+            for c in ["implied_prob", "model_prob", "edge"]:
+                if c in b:
+                    b[c] = (b[c] * 100).round(1)
+            st.dataframe(b, width='stretch', hide_index=True)
+    else:
+        st.caption("Set `ODDS_API_KEY` in .env to compare against bookmaker odds.")
 
 # ----------------------------------------------------------- Knowledge base
 with tab_kb:

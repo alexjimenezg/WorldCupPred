@@ -62,12 +62,15 @@ class EnsembleSampler:
 
 def run_simulation(predictor: MatchPredictor | None = None, *, n: int | None = None,
                    seed: int | None = None, fixed: dict | None = None,
-                   progress: bool = True, save: bool = True) -> pd.DataFrame:
-    predictor = predictor or MatchPredictor.load_default()
+                   progress: bool = True, save: bool = True, sampler=None) -> pd.DataFrame:
     n = int(n or _SIM["n_iterations"])
     seed = _SIM["random_seed"] if seed is None else seed
     rng = np.random.default_rng(seed)
-    sampler = EnsembleSampler(predictor, rng)
+    if sampler is None:  # build the ensemble sampler unless one is injected (tests)
+        predictor = predictor or MatchPredictor.load_default()
+        sampler = EnsembleSampler(predictor, rng)
+    else:
+        sampler.rng = rng
 
     champ = Counter()
     won_group = Counter()
@@ -109,8 +112,8 @@ def run_simulation(predictor: MatchPredictor | None = None, *, n: int | None = N
         table.to_parquet(CONFIG.processed / "title_odds.parquet", index=False)
         _write_report(table, n, time.time() - t0)
     if progress:
-        print(f"done: {n:,} sims in {time.time() - t0:.1f}s "
-              f"({sampler._cache.__len__()} cached matchups)")
+        cached = len(getattr(sampler, "_cache", {}))
+        print(f"done: {n:,} sims in {time.time() - t0:.1f}s ({cached} cached matchups)")
     return table
 
 

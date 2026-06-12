@@ -7,7 +7,7 @@ elo: 1912
 fifa_rank: 12
 host: False
 champion_pct: 1.49
-updated: 2026-06-12 01:36
+updated: 2026-06-12 01:45
 ---
 
 # Croatia
@@ -19,14 +19,14 @@ updated: 2026-06-12 01:36
 | --- | --- |
 | Champion | 1.5% |
 | Reach final | 4.1% |
-| Reach semi-final | 10.2% |
-| Reach quarter-final | 21.1% |
-| Reach round of 16 | 46.6% |
-| Reach round of 32 | 90.1% |
-| Win [[Group L]] | 27.8% |
+| Reach semi-final | 9.8% |
+| Reach quarter-final | 20.8% |
+| Reach round of 16 | 45.6% |
+| Reach round of 32 | 90.0% |
+| Win [[Group L]] | 28.2% |
 
 ## Group L rivals
 [[England]], [[Ghana]], [[Panama]]
 
 ## Links
-Confederation [[UEFA]] · run [[Simulation 2026-06-12 0136]] · [[00-Index|Index]]
+Confederation [[UEFA]] · run [[Simulation 2026-06-12 0145]] · [[00-Index|Index]]

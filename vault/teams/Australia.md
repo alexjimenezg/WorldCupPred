@@ -6,8 +6,8 @@ confederation: AFC
 elo: 1777
 fifa_rank: 28
 host: False
-champion_pct: 0.35
-updated: 2026-06-12 01:36
+champion_pct: 0.32
+updated: 2026-06-12 01:45
 ---
 
 # Australia
@@ -17,16 +17,16 @@ updated: 2026-06-12 01:36
 ## Title odds (latest)
 | Stage | Probability |
 | --- | --- |
-| Champion | 0.4% |
+| Champion | 0.3% |
 | Reach final | 1.1% |
-| Reach semi-final | 3.6% |
+| Reach semi-final | 3.7% |
 | Reach quarter-final | 11.5% |
-| Reach round of 16 | 32.4% |
-| Reach round of 32 | 65.3% |
-| Win [[Group D]] | 21.1% |
+| Reach round of 16 | 31.4% |
+| Reach round of 32 | 64.7% |
+| Win [[Group D]] | 20.8% |
 
 ## Group D rivals
 [[United States]], [[Paraguay]], [[Turkey]]
 
 ## Links
-Confederation [[AFC]] · run [[Simulation 2026-06-12 0136]] · [[00-Index|Index]]
+Confederation [[AFC]] · run [[Simulation 2026-06-12 0145]] · [[00-Index|Index]]

@@ -3,7 +3,7 @@ type: confederation
 confederation: OFC
 n_teams: 1
 combined_champion_pct: 0.0
-updated: 2026-06-12 01:36
+updated: 2026-06-12 01:45
 ---
 
 # OFC

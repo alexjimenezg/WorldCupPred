@@ -71,13 +71,31 @@ tests/       tournament / monte carlo / elo unit tests
 | [football-data.org](https://www.football-data.org) | free | 2026 fixtures & live scores |
 | Transfermarkt | none (scrape) | squad market value (talent proxy) |
 
+## Results (latest run)
+
+Top title odds from 50,000 Monte Carlo simulations (full table in `reports/title_odds.md`):
+
+| Team | Champion | Reach final |
+| --- | --- | --- |
+| Spain | 16.9% | 26.0% |
+| Argentina | 16.2% | 25.2% |
+| France | 9.2% | 16.3% |
+| England | 8.5% | 15.7% |
+| Brazil | 6.3% | 12.6% |
+| Portugal | 5.4% | 10.9% |
+
+**Validation** (walk-forward, held-out 2023–2025 competitive matches, Ranked Probability
+Score — lower is better): baseline 0.2337 → Elo 0.1696, Dixon-Coles 0.1694, ML 0.1708,
+DL 0.1690, **ensemble 0.1670** (+28.5% vs baseline). 14 unit tests cover the Elo math,
+tournament format, all 495 third-place allocations, and the simulation invariants.
+
 ## Methodology & status
 
-See the Obsidian vault (`vault/`) for methodology notes, data-source cards, and model cards,
-and `C:\Users\alexi\.claude\plans\make-a-full-plan-snappy-turtle.md` for the full build plan.
+See the Obsidian vault (`vault/`) for methodology notes, data-source cards, and model cards.
 
-Build phases: **P0 scaffold ✓** · P1 data · P2 match engine · P3 simulation · P4 ML/DL
-ensemble · P5 live loop · P6 vault · P7 app · P8 optional APIs + tests.
+Build phases (all complete): **P0** scaffold · **P1** data · **P2** match engine ·
+**P3** simulation · **P4** ML/DL ensemble · **P5** live loop · **P6** vault · **P7** app ·
+**P8** optional APIs + tests.
 
 ## Disclaimer
 

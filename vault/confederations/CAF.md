@@ -3,7 +3,7 @@ type: confederation
 confederation: CAF
 n_teams: 10
 combined_champion_pct: 4.9
-updated: 2026-06-12 01:36
+updated: 2026-06-12 01:45
 ---
 
 # CAF
@@ -12,8 +12,8 @@ updated: 2026-06-12 01:36
 
 | Team | Group | Champion |
 | --- | --- | --- |
-| [[Morocco]] | [[Group C]] | 3.5% |
-| [[Senegal]] | [[Group I]] | 0.5% |
+| [[Morocco]] | [[Group C]] | 3.4% |
+| [[Senegal]] | [[Group I]] | 0.7% |
 | [[Algeria]] | [[Group J]] | 0.5% |
 | [[Ivory Coast]] | [[Group E]] | 0.2% |
 | [[Egypt]] | [[Group G]] | 0.1% |

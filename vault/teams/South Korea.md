@@ -6,8 +6,8 @@ confederation: AFC
 elo: 1758
 fifa_rank: 33
 host: False
-champion_pct: 0.21
-updated: 2026-06-12 01:36
+champion_pct: 0.22
+updated: 2026-06-12 01:45
 ---
 
 # South Korea
@@ -19,14 +19,14 @@ updated: 2026-06-12 01:36
 | --- | --- |
 | Champion | 0.2% |
 | Reach final | 0.8% |
-| Reach semi-final | 3.0% |
-| Reach quarter-final | 10.9% |
-| Reach round of 16 | 31.2% |
-| Reach round of 32 | 72.4% |
-| Win [[Group A]] | 19.9% |
+| Reach semi-final | 2.9% |
+| Reach quarter-final | 10.6% |
+| Reach round of 16 | 31.7% |
+| Reach round of 32 | 73.3% |
+| Win [[Group A]] | 20.5% |
 
 ## Group A rivals
 [[Mexico]], [[South Africa]], [[Czech Republic]]
 
 ## Links
-Confederation [[AFC]] · run [[Simulation 2026-06-12 0136]] · [[00-Index|Index]]
+Confederation [[AFC]] · run [[Simulation 2026-06-12 0145]] · [[00-Index|Index]]

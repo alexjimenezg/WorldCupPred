@@ -1,7 +1,7 @@
 ---
 type: group
 group: B
-updated: 2026-06-12 01:36
+updated: 2026-06-12 01:45
 ---
 
 # Group B
@@ -10,9 +10,9 @@ Teams: [[Canada]], [[Bosnia and Herzegovina]], [[Qatar]], [[Switzerland]]
 
 | Team | Win group | Reach R32 | Champion |
 | --- | --- | --- | --- |
-| [[Switzerland]] | 50.4% | 96.1% | 2.1% |
-| [[Canada]] | 42.3% | 95.2% | 0.4% |
-| [[Bosnia and Herzegovina]] | 6.2% | 56.3% | 0.0% |
-| [[Qatar]] | 1.1% | 17.4% | 0.0% |
+| [[Switzerland]] | 51.1% | 96.4% | 2.2% |
+| [[Canada]] | 42.0% | 95.2% | 0.4% |
+| [[Bosnia and Herzegovina]] | 5.9% | 56.3% | 0.0% |
+| [[Qatar]] | 1.0% | 16.9% | 0.0% |
 
-Run [[Simulation 2026-06-12 0136]] · [[00-Index|Index]]
+Run [[Simulation 2026-06-12 0145]] · [[00-Index|Index]]

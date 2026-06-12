@@ -6,8 +6,8 @@ confederation: UEFA
 elo: 1989
 fifa_rank: 6
 host: False
-champion_pct: 5.4
-updated: 2026-06-12 01:36
+champion_pct: 5.38
+updated: 2026-06-12 01:45
 ---
 
 # Portugal
@@ -19,14 +19,14 @@ updated: 2026-06-12 01:36
 | --- | --- |
 | Champion | 5.4% |
 | Reach final | 10.9% |
-| Reach semi-final | 20.3% |
-| Reach quarter-final | 37.1% |
-| Reach round of 16 | 63.8% |
-| Reach round of 32 | 92.9% |
-| Win [[Group K]] | 48.6% |
+| Reach semi-final | 20.7% |
+| Reach quarter-final | 37.9% |
+| Reach round of 16 | 64.3% |
+| Reach round of 32 | 93.1% |
+| Win [[Group K]] | 49.9% |
 
 ## Group K rivals
 [[DR Congo]], [[Uzbekistan]], [[Colombia]]
 
 ## Links
-Confederation [[UEFA]] · run [[Simulation 2026-06-12 0136]] · [[00-Index|Index]]
+Confederation [[UEFA]] · run [[Simulation 2026-06-12 0145]] · [[00-Index|Index]]

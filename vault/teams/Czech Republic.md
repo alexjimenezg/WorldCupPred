@@ -6,8 +6,8 @@ confederation: UEFA
 elo: 1740
 fifa_rank: 35
 host: False
-champion_pct: 0.09
-updated: 2026-06-12 01:36
+champion_pct: 0.13
+updated: 2026-06-12 01:45
 ---
 
 # Czech Republic
@@ -21,12 +21,12 @@ updated: 2026-06-12 01:36
 | Reach final | 0.5% |
 | Reach semi-final | 2.1% |
 | Reach quarter-final | 8.4% |
-| Reach round of 16 | 27.6% |
-| Reach round of 32 | 69.1% |
-| Win [[Group A]] | 16.5% |
+| Reach round of 16 | 27.2% |
+| Reach round of 32 | 67.5% |
+| Win [[Group A]] | 16.9% |
 
 ## Group A rivals
 [[Mexico]], [[South Africa]], [[South Korea]]
 
 ## Links
-Confederation [[UEFA]] · run [[Simulation 2026-06-12 0136]] · [[00-Index|Index]]
+Confederation [[UEFA]] · run [[Simulation 2026-06-12 0145]] · [[00-Index|Index]]

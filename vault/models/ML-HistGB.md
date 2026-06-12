@@ -1,7 +1,7 @@
 ---
 type: model
 model: ML-HistGB
-updated: 2026-06-12 01:36
+updated: 2026-06-12 01:45
 ---
 
 # ML-HistGB

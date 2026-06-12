@@ -1,7 +1,7 @@
 ---
 type: data-source
 source: eloratings
-updated: 2026-06-12 01:36
+updated: 2026-06-12 01:45
 ---
 
 # eloratings
