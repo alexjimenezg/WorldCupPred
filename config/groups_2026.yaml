@@ -1,0 +1,56 @@
+# FIFA World Cup 2026 — official final draw (Washington DC, 5 Dec 2025).
+# Verified against two independent sources (Wikipedia "2026 FIFA World Cup draw"
+# and DAZN full-draw) on 2026-06-12. Hosts seeded: Mexico->A1, Canada->B1, USA->D1.
+# Team names use the martj42/international_results canonical spelling (the training
+# backbone). Aliases for other sources live in confederations.yaml / src/config.py.
+
+tournament: "FIFA World Cup 2026"
+hosts: [Canada, Mexico, United States]
+dates:
+  opening_match: "2026-06-11"
+  group_stage_end: "2026-06-27"
+  final: "2026-07-19"
+
+format:
+  n_teams: 48
+  n_groups: 12
+  group_size: 4
+  advance_top_n: 2          # top two of each group advance directly
+  best_thirds_advance: 8    # plus the 8 best third-placed teams -> Round of 32
+  rounds: [group, R32, R16, QF, SF, F]
+  points: {win: 3, draw: 1, loss: 0}
+  # Official FIFA tiebreakers, applied in order (src/simulation/tournament_2026.py):
+  tiebreakers:
+    - points
+    - goal_difference
+    - goals_for
+    - head_to_head_points
+    - head_to_head_goal_difference
+    - head_to_head_goals_for
+    - fair_play
+    - drawing_of_lots   # approximated by a deterministic RNG in simulation
+
+# Ordered list = draw position 1..4 within the group.
+groups:
+  A: [Mexico, South Africa, South Korea, Czech Republic]
+  B: [Canada, Bosnia and Herzegovina, Qatar, Switzerland]
+  C: [Brazil, Morocco, Haiti, Scotland]
+  D: [United States, Paraguay, Australia, Turkey]
+  E: [Germany, Curacao, Ivory Coast, Ecuador]
+  F: [Netherlands, Japan, Sweden, Tunisia]
+  G: [Belgium, Egypt, Iran, New Zealand]
+  H: [Spain, Cape Verde, Saudi Arabia, Uruguay]
+  I: [France, Senegal, Iraq, Norway]
+  J: [Argentina, Algeria, Austria, Jordan]
+  K: [Portugal, DR Congo, Uzbekistan, Colombia]
+  L: [England, Croatia, Ghana, Panama]
+
+# Knockout bracket (Round of 32 -> Final): the authoritative pairings and FIFA's official
+# "8 best third-placed teams" allocation table are encoded and unit-tested in
+# src/simulation/tournament_2026.py (P3), fetched/verified from the FIFA published bracket.
+# Kept in code (not hand-edited here) because the third-place allocation is a lookup over
+# which group letters supply the 8 qualifying thirds. This file is the source of truth for
+# GROUPS and FORMAT only.
+knockout:
+  source: "src/simulation/tournament_2026.py (BRACKET_R32, BEST_THIRD_ALLOCATION)"
+  status: "populated in P3"

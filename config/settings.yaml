@@ -1,0 +1,79 @@
+# Global configuration for WorldCupPred. Loaded by src/config.py.
+# Paths are relative to the project root.
+
+paths:
+  data_raw: data/raw
+  data_interim: data/interim
+  data_processed: data/processed
+  models: models
+  reports: reports
+  figures: reports/figures
+  vault: vault
+  config: config
+
+data_sources:
+  # martj42 international results (the training backbone) — direct GitHub raw CSVs.
+  results_base_url: "https://raw.githubusercontent.com/martj42/international_results/master"
+  results_files:
+    results: results.csv
+    goalscorers: goalscorers.csv
+    shootouts: shootouts.csv
+    former_names: former_names.csv
+  elo_url: "https://www.eloratings.net"
+  fifa_rankings_wikipedia: "https://en.wikipedia.org/wiki/FIFA_Men%27s_World_Ranking"
+  odds_api_base: "https://api.the-odds-api.com/v4"
+  odds_sport_key: "soccer_fifa_world_cup_winner"
+  football_data_base: "https://api.football-data.org/v4"
+  football_data_competition: "WC"
+  cache_max_age_days: 1          # re-fetch raw sources older than this
+
+elo:
+  start_rating: 1500.0
+  # K weighted by match importance (World Football Elo Ratings convention).
+  k_base: 40.0
+  importance_weights:
+    "FIFA World Cup": 60
+    "FIFA World Cup qualification": 40
+    "UEFA Euro": 50
+    "Copa America": 50
+    "African Cup of Nations": 40
+    "AFC Asian Cup": 40
+    "Confederations Cup": 45
+    "UEFA Nations League": 35
+    "Friendly": 20
+    "_default": 30
+  home_advantage: 65.0           # Elo points added to the home (non-neutral) side
+  goal_difference_multiplier: true
+
+dixon_coles:
+  # Exponential time decay: weight = exp(-xi * age_in_days). ~ half-life 1.6 years.
+  time_decay_xi: 0.0012
+  max_goals: 10                  # truncation for the scoreline distribution grid
+  min_matches_per_team: 8        # below this, shrink toward Elo/confederation prior
+  recent_years: 12               # training window for the goal model
+
+features:
+  form_window_matches: 10        # recent form lookback
+  rest_days_cap: 30
+
+ensemble:
+  # Default blend weights over match-outcome probabilities; retuned by backtest (P4).
+  weights:
+    dixon_coles: 0.45
+    elo: 0.30
+    ml: 0.15
+    dl: 0.10
+  use_market_anchor: true        # if odds available, calibrate toward implied probs
+  market_anchor_strength: 0.20
+
+simulation:
+  n_iterations: 50000
+  random_seed: 2026
+  # Knockout draw resolution after 90' tie: P(stronger advances) via logistic of Elo gap,
+  # bounded near a coin flip to reflect penalty-shootout randomness.
+  extra_time_elo_scale: 0.0025
+  penalty_floor: 0.35            # min win prob for the weaker side in a shootout
+
+knowledge_base:
+  obsidian_vault: vault
+  regenerate_on_update: true

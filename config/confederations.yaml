@@ -1,0 +1,47 @@
+# Confederation membership for the 48 qualified teams (canonical martj42 names),
+# plus a name-alias map to normalize spellings across data sources
+# (FIFA / DAZN / eloratings.net / The Odds API) onto the canonical key.
+
+confederations:
+  UEFA: [Czech Republic, Bosnia and Herzegovina, Switzerland, Scotland, Turkey,
+         Germany, Netherlands, Sweden, Belgium, Spain, France, Norway, Austria,
+         Portugal, England, Croatia]
+  CAF: [South Africa, Morocco, Ivory Coast, Tunisia, Egypt, Cape Verde, Senegal,
+        Algeria, DR Congo, Ghana]
+  AFC: [South Korea, Qatar, Australia, Japan, Iran, Saudi Arabia, Iraq, Jordan,
+        Uzbekistan]
+  CONMEBOL: [Brazil, Paraguay, Ecuador, Uruguay, Argentina, Colombia]
+  CONCACAF: [Mexico, Canada, United States, Haiti, Curacao, Panama]
+  OFC: [New Zealand]
+
+# Continental strength priors (mean Elo-ish offset) used only as a weak fallback for
+# teams with very few recent matches; learned weights override these. Tunable.
+confederation_strength_prior:
+  UEFA: 1750
+  CONMEBOL: 1750
+  CAF: 1620
+  AFC: 1600
+  CONCACAF: 1600
+  OFC: 1500
+
+# Map alternate spellings -> canonical (martj42) name. Extend as new sources appear.
+aliases:
+  "Korea Republic": South Korea
+  "Republic of Korea": South Korea
+  "Cote D'Ivoire": Ivory Coast
+  "Côte d'Ivoire": Ivory Coast
+  "IR Iran": Iran
+  "Iran (Islamic Republic of)": Iran
+  "Curaçao": Curacao
+  "Türkiye": Turkey
+  "Turkiye": Turkey
+  "USA": United States
+  "United States of America": United States
+  "Czechia": Czech Republic
+  "Cabo Verde": Cape Verde
+  "DR Congo (Congo DR)": DR Congo
+  "Congo DR": DR Congo
+  "Democratic Republic of the Congo": DR Congo
+  "Bosnia & Herzegovina": Bosnia and Herzegovina
+  "Bosnia": Bosnia and Herzegovina
+  "South Korea ": South Korea

@@ -1,0 +1,26 @@
+# WorldCupPred dependencies (Python 3.11).
+# Core data/ML stack (already present in the shared venv):
+pandas
+numpy
+scikit-learn
+scipy
+matplotlib
+seaborn
+tensorflow-cpu
+keras
+joblib
+pyarrow
+kagglehub
+streamlit
+requests
+httpx
+beautifulsoup4
+lxml
+# Added for this project:
+pyyaml            # config files
+python-dotenv     # load API keys from .env
+tqdm              # progress bars in long fits/sims
+# Optional (cross-checks / extra sources); install if you want them:
+# statsmodels     # Poisson-GLM cross-check of Dixon-Coles
+# soccerdata      # FBref player/match data (handles FBref's 403 + caching)
+pytest            # tests

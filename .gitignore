@@ -1,0 +1,29 @@
+# Secrets
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.ipynb_checkpoints/
+.pytest_cache/
+
+# Data: keep folder structure (.gitkeep) but not large/raw artifacts
+data/raw/*
+data/interim/*
+data/processed/*
+!data/**/.gitkeep
+
+# Trained models (regenerable); keep folder
+models/*
+!models/.gitkeep
+
+# Reports figures are regenerable
+reports/figures/*
+!reports/figures/.gitkeep
+
+# OS
+.DS_Store
+Thumbs.db
