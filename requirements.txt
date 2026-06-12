@@ -1,27 +1,22 @@
-# WorldCupPred dependencies (Python 3.11).
-# Core data/ML stack (already present in the shared venv):
-pandas
-numpy
-scikit-learn
-scipy
-matplotlib
-seaborn
-tensorflow-cpu
-keras
-joblib
-pyarrow
-kagglehub
-streamlit
+# WorldCupPred dependencies (Python 3.11 — see .python-version).
+# Kept lean and pinned where it matters so the Streamlit Cloud build can
+# unpickle the committed model artifacts in models/.
+streamlit>=1.49
+pandas>=2.2
+numpy>=2,<3
+scikit-learn==1.8.0   # must match the version that trained models/ml_outcome.joblib
+scipy>=1.11
+plotly>=5.18          # interactive charts in the Streamlit app
+pyarrow               # parquet IO
 requests
-httpx
-beautifulsoup4
-lxml
-# Added for this project:
-pyyaml            # config files
-plotly            # interactive charts in the Streamlit app
-python-dotenv     # load API keys from .env
-tqdm              # progress bars in long fits/sims
-# Optional (cross-checks / extra sources); install if you want them:
-# statsmodels     # Poisson-GLM cross-check of Dixon-Coles
-# soccerdata      # FBref player/match data (handles FBref's 403 + caching)
-pytest            # tests
+pyyaml                # config files
+python-dotenv         # load API keys from .env
+tqdm                  # progress bars in long fits/sims
+
+# --- optional, NOT installed on Streamlit Cloud -----------------------------
+# Deep-learning engine (10% blend weight, off by default; app degrades
+# gracefully without it). Install locally if you want the DL toggle:
+#   tensorflow-cpu
+#   keras
+# Local-only extras (notebooks, scraping cross-checks, tests):
+#   matplotlib seaborn kagglehub httpx beautifulsoup4 lxml pytest

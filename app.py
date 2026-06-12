@@ -27,6 +27,9 @@ st.set_page_config(page_title="WorldCupPred 2026", page_icon="🏆", layout="wid
 
 _MODELS_READY = (CONFIG.models_dir / "elo_state.json").exists() and \
                 (CONFIG.models_dir / "dixon_coles.json").exists()
+import importlib.util
+_HAS_DL = (importlib.util.find_spec("keras") is not None
+           and (CONFIG.models_dir / "dl_outcome.keras").exists())
 _ODDS_PATH = CONFIG.processed / "title_odds.parquet"
 _HISTORY_PATH = CONFIG.processed / "odds_history.parquet"
 
@@ -469,8 +472,13 @@ with tab_update:
 # ---------------------------------------------------------------- Single match
 with tab_match:
     st.subheader("Head-to-head predictor")
-    with_dl = st.toggle("Include deep-learning engine", value=False,
-                        help="Adds the keras embedding model to the blend.")
+    if _HAS_DL:
+        with_dl = st.toggle("Include deep-learning engine", value=False,
+                            help="Adds the keras embedding model to the blend.")
+    else:
+        with_dl = False
+        st.caption("Deep-learning engine unavailable here (keras not installed) — "
+                   "blend uses Elo + Dixon-Coles + ML.")
     c1, c2, c3 = st.columns([3, 3, 2])
     home = c1.selectbox("Team A", CONFIG.teams, index=CONFIG.teams.index("Spain"),
                         format_func=flag)
