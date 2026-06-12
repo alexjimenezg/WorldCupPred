@@ -18,6 +18,7 @@ beautifulsoup4
 lxml
 # Added for this project:
 pyyaml            # config files
+plotly            # interactive charts in the Streamlit app
 python-dotenv     # load API keys from .env
 tqdm              # progress bars in long fits/sims
 # Optional (cross-checks / extra sources); install if you want them:

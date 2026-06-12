@@ -6,8 +6,8 @@ confederation: CAF
 elo: 1772
 fifa_rank: 29
 host: False
-champion_pct: 0.5
-updated: 2026-06-12 01:45
+champion_pct: 0.48
+updated: 2026-06-12 09:49
 ---
 
 # Algeria
@@ -18,15 +18,15 @@ updated: 2026-06-12 01:45
 | Stage | Probability |
 | --- | --- |
 | Champion | 0.5% |
-| Reach final | 1.6% |
-| Reach semi-final | 4.7% |
-| Reach quarter-final | 12.2% |
-| Reach round of 16 | 26.6% |
-| Reach round of 32 | 71.6% |
-| Win [[Group J]] | 14.0% |
+| Reach final | 1.5% |
+| Reach semi-final | 4.4% |
+| Reach quarter-final | 11.8% |
+| Reach round of 16 | 25.7% |
+| Reach round of 32 | 73.0% |
+| Win [[Group J]] | 13.4% |
 
 ## Group J rivals
 [[Argentina]], [[Austria]], [[Jordan]]
 
 ## Links
-Confederation [[CAF]] · run [[Simulation 2026-06-12 0145]] · [[00-Index|Index]]
+Confederation [[CAF]] · run [[Simulation 2026-06-12 0949]] · [[00-Index|Index]]

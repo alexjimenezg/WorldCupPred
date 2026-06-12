@@ -6,8 +6,8 @@ confederation: UEFA
 elo: 2157
 fifa_rank: 1
 host: False
-champion_pct: 16.91
-updated: 2026-06-12 01:45
+champion_pct: 17.16
+updated: 2026-06-12 09:49
 ---
 
 # Spain
@@ -17,16 +17,16 @@ updated: 2026-06-12 01:45
 ## Title odds (latest)
 | Stage | Probability |
 | --- | --- |
-| Champion | 16.9% |
-| Reach final | 26.0% |
-| Reach semi-final | 37.2% |
-| Reach quarter-final | 49.8% |
-| Reach round of 16 | 69.6% |
-| Reach round of 32 | 99.4% |
-| Win [[Group H]] | 79.8% |
+| Champion | 17.2% |
+| Reach final | 26.1% |
+| Reach semi-final | 38.2% |
+| Reach quarter-final | 50.6% |
+| Reach round of 16 | 70.6% |
+| Reach round of 32 | 99.3% |
+| Win [[Group H]] | 80.5% |
 
 ## Group H rivals
 [[Cape Verde]], [[Saudi Arabia]], [[Uruguay]]
 
 ## Links
-Confederation [[UEFA]] · run [[Simulation 2026-06-12 0145]] · [[00-Index|Index]]
+Confederation [[UEFA]] · run [[Simulation 2026-06-12 0949]] · [[00-Index|Index]]

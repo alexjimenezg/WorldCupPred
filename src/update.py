@@ -1,6 +1,7 @@
 """Live tournament loop: add a result -> refit -> simulate-from-now -> refreshed odds.
 
 CLI:
+    python -m src.update --sync                  # pull results to-date, refit, re-simulate
     python -m src.update --match "Spain 3-1 Cape Verde"
     python -m src.update --match "Brazil 2-0 Scotland" --retrain-ml -n 30000
     python -m src.update --list | --undo | --recompute | --reset
@@ -47,7 +48,10 @@ def augmented_matches(store: ResultsStore) -> pd.DataFrame:
     if extra.empty:
         return base
     cols = base.columns
+    # keep="last" guards against double-counting once a refreshed matches.parquet
+    # starts to contain the same WC 2026 matches the store holds
     return (pd.concat([base, extra[cols]], ignore_index=True)
+              .drop_duplicates(subset=["date", "home_team", "away_team"], keep="last")
               .sort_values("date").reset_index(drop=True))
 
 
@@ -97,6 +101,22 @@ def recompute(*, retrain_ml: bool = False, with_dl: bool = False,
     return table
 
 
+def sync_and_recompute(*, retrain_ml: bool = False, n_sims: int | None = None,
+                       verbose: bool = True) -> tuple[dict, pd.DataFrame | None]:
+    """Pull results-to-date from all reachable sources; refit + re-simulate if anything
+    new arrived. Returns (sync summary, new odds table or None if nothing changed)."""
+    from src.data.auto_results import sync_results
+    info = sync_results()
+    if verbose:
+        srcs = ", ".join(info["sources"]) or "no source reachable"
+        print(f"sync [{srcs}]: {info['n_changed']} new/changed, "
+              f"{info['total']} results total")
+    if not info["n_changed"]:
+        return info, None
+    table = recompute(retrain_ml=retrain_ml, n_sims=n_sims, verbose=verbose)
+    return info, table
+
+
 def apply_result(text: str, *, stage: str = "group", retrain_ml: bool = False,
                  n_sims: int | None = None, verbose: bool = True) -> pd.DataFrame:
     home, away, hg, ag = parse_result(text)
@@ -116,6 +136,8 @@ def _print_top(table: pd.DataFrame, k: int = 12) -> None:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="WorldCupPred live update")
+    ap.add_argument("--sync", action="store_true",
+                    help="auto-import results to-date, then refit + re-simulate")
     ap.add_argument("--match", help='result string, e.g. "Spain 3-1 Cape Verde"')
     ap.add_argument("--stage", default="group",
                     help="group | R32 | R16 | QF | SF | final")
@@ -141,6 +163,15 @@ def main() -> int:
         print(f"removed: {r}" if r else "nothing to undo")
         if r:
             _print_top(recompute(n_sims=args.iterations))
+        return 0
+    if args.sync:
+        info, table = sync_and_recompute(retrain_ml=args.retrain_ml,
+                                         n_sims=args.iterations)
+        if table is not None:
+            print("\nupdated title odds (top 12):")
+            _print_top(table)
+        else:
+            print("store already up to date — nothing to recompute")
         return 0
     if args.match:
         table = apply_result(args.match, stage=args.stage,

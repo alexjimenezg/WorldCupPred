@@ -1,7 +1,7 @@
 ---
 type: group
 group: E
-updated: 2026-06-12 01:45
+updated: 2026-06-12 09:49
 ---
 
 # Group E
@@ -10,9 +10,9 @@ Teams: [[Germany]], [[Curacao]], [[Ivory Coast]], [[Ecuador]]
 
 | Team | Win group | Reach R32 | Champion |
 | --- | --- | --- | --- |
-| [[Germany]] | 55.6% | 97.3% | 4.4% |
-| [[Ecuador]] | 32.0% | 92.9% | 2.9% |
-| [[Ivory Coast]] | 11.8% | 74.3% | 0.2% |
-| [[Curacao]] | 0.5% | 9.2% | 0.0% |
+| [[Germany]] | 56.3% | 97.6% | 4.3% |
+| [[Ecuador]] | 31.5% | 92.5% | 2.9% |
+| [[Ivory Coast]] | 11.7% | 73.9% | 0.2% |
+| [[Curacao]] | 0.5% | 9.5% | 0.0% |
 
-Run [[Simulation 2026-06-12 0145]] · [[00-Index|Index]]
+Run [[Simulation 2026-06-12 0949]] · [[00-Index|Index]]

@@ -1,7 +1,7 @@
 ---
 type: group
 group: I
-updated: 2026-06-12 01:45
+updated: 2026-06-12 09:49
 ---
 
 # Group I
@@ -10,9 +10,9 @@ Teams: [[France]], [[Senegal]], [[Iraq]], [[Norway]]
 
 | Team | Win group | Reach R32 | Champion |
 | --- | --- | --- | --- |
-| [[France]] | 55.8% | 94.9% | 9.2% |
-| [[Norway]] | 26.7% | 83.0% | 2.2% |
-| [[Senegal]] | 15.9% | 72.6% | 0.7% |
-| [[Iraq]] | 1.6% | 19.2% | 0.0% |
+| [[France]] | 55.8% | 94.9% | 9.0% |
+| [[Norway]] | 26.1% | 83.3% | 2.1% |
+| [[Senegal]] | 16.7% | 74.0% | 0.4% |
+| [[Iraq]] | 1.4% | 19.0% | 0.0% |
 
-Run [[Simulation 2026-06-12 0145]] · [[00-Index|Index]]
+Run [[Simulation 2026-06-12 0949]] · [[00-Index|Index]]

@@ -1,7 +1,7 @@
 ---
 type: group
 group: J
-updated: 2026-06-12 01:45
+updated: 2026-06-12 09:49
 ---
 
 # Group J
@@ -10,9 +10,9 @@ Teams: [[Argentina]], [[Algeria]], [[Austria]], [[Jordan]]
 
 | Team | Win group | Reach R32 | Champion |
 | --- | --- | --- | --- |
-| [[Argentina]] | 67.3% | 97.1% | 16.2% |
-| [[Austria]] | 16.5% | 76.1% | 0.8% |
-| [[Algeria]] | 14.0% | 71.6% | 0.5% |
-| [[Jordan]] | 2.2% | 23.5% | 0.0% |
+| [[Argentina]] | 70.5% | 97.3% | 16.4% |
+| [[Austria]] | 14.3% | 74.8% | 0.6% |
+| [[Algeria]] | 13.4% | 73.0% | 0.5% |
+| [[Jordan]] | 1.8% | 23.0% | 0.0% |
 
-Run [[Simulation 2026-06-12 0145]] · [[00-Index|Index]]
+Run [[Simulation 2026-06-12 0949]] · [[00-Index|Index]]

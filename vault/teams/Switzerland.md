@@ -6,8 +6,8 @@ confederation: UEFA
 elo: 1891
 fifa_rank: 17
 host: False
-champion_pct: 2.15
-updated: 2026-06-12 01:45
+champion_pct: 1.98
+updated: 2026-06-12 09:49
 ---
 
 # Switzerland
@@ -17,16 +17,16 @@ updated: 2026-06-12 01:45
 ## Title odds (latest)
 | Stage | Probability |
 | --- | --- |
-| Champion | 2.2% |
-| Reach final | 5.4% |
-| Reach semi-final | 12.9% |
-| Reach quarter-final | 29.9% |
-| Reach round of 16 | 62.1% |
-| Reach round of 32 | 96.4% |
-| Win [[Group B]] | 51.1% |
+| Champion | 2.0% |
+| Reach final | 4.9% |
+| Reach semi-final | 12.4% |
+| Reach quarter-final | 30.0% |
+| Reach round of 16 | 61.8% |
+| Reach round of 32 | 96.5% |
+| Win [[Group B]] | 51.7% |
 
 ## Group B rivals
 [[Canada]], [[Bosnia and Herzegovina]], [[Qatar]]
 
 ## Links
-Confederation [[UEFA]] · run [[Simulation 2026-06-12 0145]] · [[00-Index|Index]]
+Confederation [[UEFA]] · run [[Simulation 2026-06-12 0949]] · [[00-Index|Index]]

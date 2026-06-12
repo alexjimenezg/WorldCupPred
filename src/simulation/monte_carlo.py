@@ -110,11 +110,23 @@ def run_simulation(predictor: MatchPredictor | None = None, *, n: int | None = N
 
     if save:
         table.to_parquet(CONFIG.processed / "title_odds.parquet", index=False)
+        _append_history(table, n)
         _write_report(table, n, time.time() - t0)
     if progress:
         cached = len(getattr(sampler, "_cache", {}))
         print(f"done: {n:,} sims in {time.time() - t0:.1f}s ({cached} cached matchups)")
     return table
+
+
+def _append_history(table: pd.DataFrame, n: int) -> None:
+    """Append this run's table to odds_history.parquet so odds can be charted over time."""
+    path = CONFIG.processed / "odds_history.parquet"
+    snap = table.copy()
+    snap.insert(0, "ts", pd.Timestamp.now().floor("s"))
+    snap["n_sims"] = n
+    if path.exists():
+        snap = pd.concat([pd.read_parquet(path), snap], ignore_index=True)
+    snap.to_parquet(path, index=False)
 
 
 def _df_to_md(df: pd.DataFrame) -> str:

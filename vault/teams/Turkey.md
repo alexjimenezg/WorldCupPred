@@ -6,8 +6,8 @@ confederation: UEFA
 elo: 1911
 fifa_rank: 13
 host: False
-champion_pct: 0.91
-updated: 2026-06-12 01:45
+champion_pct: 1.0
+updated: 2026-06-12 09:49
 ---
 
 # Turkey
@@ -17,16 +17,16 @@ updated: 2026-06-12 01:45
 ## Title odds (latest)
 | Stage | Probability |
 | --- | --- |
-| Champion | 0.9% |
-| Reach final | 2.5% |
-| Reach semi-final | 6.8% |
-| Reach quarter-final | 18.3% |
-| Reach round of 16 | 41.3% |
-| Reach round of 32 | 73.1% |
-| Win [[Group D]] | 29.6% |
+| Champion | 1.0% |
+| Reach final | 2.6% |
+| Reach semi-final | 7.2% |
+| Reach quarter-final | 18.4% |
+| Reach round of 16 | 42.2% |
+| Reach round of 32 | 74.3% |
+| Win [[Group D]] | 29.7% |
 
 ## Group D rivals
 [[United States]], [[Paraguay]], [[Australia]]
 
 ## Links
-Confederation [[UEFA]] · run [[Simulation 2026-06-12 0145]] · [[00-Index|Index]]
+Confederation [[UEFA]] · run [[Simulation 2026-06-12 0949]] · [[00-Index|Index]]

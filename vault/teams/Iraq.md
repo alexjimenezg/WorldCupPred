@@ -7,7 +7,7 @@ elo: 1607
 fifa_rank: 63
 host: False
 champion_pct: 0.0
-updated: 2026-06-12 01:45
+updated: 2026-06-12 09:49
 ---
 
 # Iraq
@@ -20,13 +20,13 @@ updated: 2026-06-12 01:45
 | Champion | 0.0% |
 | Reach final | 0.0% |
 | Reach semi-final | 0.2% |
-| Reach quarter-final | 0.9% |
-| Reach round of 16 | 4.2% |
-| Reach round of 32 | 19.2% |
-| Win [[Group I]] | 1.6% |
+| Reach quarter-final | 0.8% |
+| Reach round of 16 | 4.1% |
+| Reach round of 32 | 19.0% |
+| Win [[Group I]] | 1.4% |
 
 ## Group I rivals
 [[France]], [[Senegal]], [[Norway]]
 
 ## Links
-Confederation [[AFC]] · run [[Simulation 2026-06-12 0145]] · [[00-Index|Index]]
+Confederation [[AFC]] · run [[Simulation 2026-06-12 0949]] · [[00-Index|Index]]

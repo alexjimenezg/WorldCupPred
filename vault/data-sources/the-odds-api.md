@@ -1,7 +1,7 @@
 ---
 type: data-source
 source: the-odds-api
-updated: 2026-06-12 01:45
+updated: 2026-06-12 09:49
 ---
 
 # the-odds-api

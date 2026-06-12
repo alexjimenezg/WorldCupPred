@@ -6,8 +6,8 @@ confederation: CONCACAF
 elo: 1788
 fifa_rank: 25
 host: True
-champion_pct: 0.42
-updated: 2026-06-12 01:45
+champion_pct: 0.36
+updated: 2026-06-12 09:49
 ---
 
 # Canada
@@ -18,15 +18,15 @@ updated: 2026-06-12 01:45
 | Stage | Probability |
 | --- | --- |
 | Champion | 0.4% |
-| Reach final | 1.5% |
-| Reach semi-final | 5.2% |
-| Reach quarter-final | 17.7% |
-| Reach round of 16 | 48.8% |
-| Reach round of 32 | 95.2% |
-| Win [[Group B]] | 42.0% |
+| Reach final | 1.3% |
+| Reach semi-final | 5.0% |
+| Reach quarter-final | 17.1% |
+| Reach round of 16 | 47.1% |
+| Reach round of 32 | 95.3% |
+| Win [[Group B]] | 41.9% |
 
 ## Group B rivals
 [[Bosnia and Herzegovina]], [[Qatar]], [[Switzerland]]
 
 ## Links
-Confederation [[CONCACAF]] · run [[Simulation 2026-06-12 0145]] · [[00-Index|Index]]
+Confederation [[CONCACAF]] · run [[Simulation 2026-06-12 0949]] · [[00-Index|Index]]

@@ -7,7 +7,7 @@ elo: 1578
 fifa_rank: 68
 host: False
 champion_pct: 0.0
-updated: 2026-06-12 01:45
+updated: 2026-06-12 09:49
 ---
 
 # Cape Verde
@@ -19,14 +19,14 @@ updated: 2026-06-12 01:45
 | --- | --- |
 | Champion | 0.0% |
 | Reach final | 0.0% |
-| Reach semi-final | 0.2% |
-| Reach quarter-final | 0.9% |
-| Reach round of 16 | 4.4% |
-| Reach round of 32 | 30.1% |
-| Win [[Group H]] | 1.3% |
+| Reach semi-final | 0.1% |
+| Reach quarter-final | 0.7% |
+| Reach round of 16 | 4.1% |
+| Reach round of 32 | 29.8% |
+| Win [[Group H]] | 1.4% |
 
 ## Group H rivals
 [[Spain]], [[Saudi Arabia]], [[Uruguay]]
 
 ## Links
-Confederation [[CAF]] · run [[Simulation 2026-06-12 0145]] · [[00-Index|Index]]
+Confederation [[CAF]] · run [[Simulation 2026-06-12 0949]] · [[00-Index|Index]]

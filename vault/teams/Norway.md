@@ -6,8 +6,8 @@ confederation: UEFA
 elo: 1914
 fifa_rank: 11
 host: False
-champion_pct: 2.18
-updated: 2026-06-12 01:45
+champion_pct: 2.12
+updated: 2026-06-12 09:49
 ---
 
 # Norway
@@ -17,16 +17,16 @@ updated: 2026-06-12 01:45
 ## Title odds (latest)
 | Stage | Probability |
 | --- | --- |
-| Champion | 2.2% |
+| Champion | 2.1% |
 | Reach final | 5.3% |
-| Reach semi-final | 12.0% |
-| Reach quarter-final | 23.9% |
-| Reach round of 16 | 48.4% |
-| Reach round of 32 | 83.0% |
-| Win [[Group I]] | 26.7% |
+| Reach semi-final | 11.9% |
+| Reach quarter-final | 24.3% |
+| Reach round of 16 | 49.1% |
+| Reach round of 32 | 83.3% |
+| Win [[Group I]] | 26.1% |
 
 ## Group I rivals
 [[France]], [[Senegal]], [[Iraq]]
 
 ## Links
-Confederation [[UEFA]] · run [[Simulation 2026-06-12 0145]] · [[00-Index|Index]]
+Confederation [[UEFA]] · run [[Simulation 2026-06-12 0949]] · [[00-Index|Index]]

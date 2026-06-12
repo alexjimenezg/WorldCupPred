@@ -33,8 +33,15 @@ Optional: copy `.env.example` to `.env` and add free API keys to unlock live odd
 
 ## The live loop (during the tournament)
 
-As matches are played, open the Streamlit app's **Update scores** tab (or run
-`python -m src.update --match "Spain 3-1 Cape Verde"`):
+**Automatic** — `python -m src.update --sync` (or the app's 🔄 *Sync results to-date*
+button; it also auto-syncs once on launch). Played results are pulled keylessly from
+martj42/international_results (plus football-data.org if a key is set), the round is
+inferred from the official schedule, and everything below runs only if something new
+arrived. Each saved simulation also snapshots to `odds_history.parquet`, charted in the
+app's **History** tab.
+
+**Manual** — the app's **Update** tab, or
+`python -m src.update --match "Spain 3-1 Cape Verde"`:
 
 1. the result is appended to the results store,
 2. Elo updates incrementally and the base model optionally retrains,

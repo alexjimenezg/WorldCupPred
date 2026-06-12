@@ -1,0 +1,11 @@
+# WorldCupPred — WC26 dark theme (tri-host palette: CAN red / MEX green / USA blue)
+[theme]
+base = "dark"
+primaryColor = "#e11d48"
+backgroundColor = "#0b1220"
+secondaryBackgroundColor = "#141d33"
+textColor = "#e8ecf6"
+font = "sans serif"
+
+[browser]
+gatherUsageStats = false
