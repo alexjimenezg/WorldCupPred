@@ -17,6 +17,9 @@ from functools import cached_property
 from pathlib import Path
 from typing import Any
 
+# Silence joblib/loky's wmic-based core probe (missing on modern Windows) before it runs.
+os.environ.setdefault("LOKY_MAX_CPU_COUNT", str(os.cpu_count() or 4))
+
 import yaml
 
 try:  # optional dependency, never fatal

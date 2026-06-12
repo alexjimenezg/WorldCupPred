@@ -95,8 +95,28 @@ class MatchPredictor:
 
     # ---- construction -------------------------------------------------------
     @classmethod
-    def load_default(cls, *, ml: Any | None = None, dl: Any | None = None) -> "MatchPredictor":
-        return cls(elo=EloModel.load(), dc=DixonColes.load(), ml=ml, dl=dl)
+    def load_default(cls, *, with_ml: bool = True, with_dl: bool = False,
+                     ml: Any | None = None, dl: Any | None = None) -> "MatchPredictor":
+        """Load Elo + Dixon-Coles, and optionally the ML / DL engines if trained on disk.
+
+        DL is off by default: its per-call keras overhead slows the 50k-iteration sim. It
+        stays available for single-match analysis and can be enabled with with_dl=True.
+        """
+        elo = EloModel.load()
+        dc = DixonColes.load()
+        if with_ml and ml is None:
+            try:
+                from src.models.ml_outcome import MLOutcome
+                ml = MLOutcome.load(elo=elo)
+            except FileNotFoundError:
+                ml = None
+        if with_dl and dl is None:
+            try:
+                from src.models.dl_outcome import DLOutcome
+                dl = DLOutcome.load(elo=elo)
+            except (FileNotFoundError, OSError):
+                dl = None
+        return cls(elo=elo, dc=dc, ml=ml, dl=dl)
 
 
 if __name__ == "__main__":

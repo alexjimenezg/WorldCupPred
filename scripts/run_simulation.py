@@ -25,7 +25,8 @@ from src.simulation.monte_carlo import run_simulation  # noqa: E402
 def main() -> int:
     ap = argparse.ArgumentParser(description="Run the WorldCupPred simulation")
     ap.add_argument("-n", "--iterations", type=int, default=None)
-    ap.add_argument("--refit", action="store_true", help="refit Elo + Dixon-Coles")
+    ap.add_argument("--refit", action="store_true", help="refit all models")
+    ap.add_argument("--with-dl", action="store_true", help="include keras DL in the ensemble")
     ap.add_argument("--seed", type=int, default=None)
     args = ap.parse_args()
 
@@ -35,12 +36,19 @@ def main() -> int:
 
     elo_path = CONFIG.models_dir / "elo_state.json"
     dc_path = CONFIG.models_dir / "dixon_coles.json"
+    ml_path = CONFIG.models_dir / "ml_outcome.joblib"
     if args.refit or not elo_path.exists():
         build_elo()
     if args.refit or not dc_path.exists():
         build_dixon_coles()
+    if args.refit or not ml_path.exists():
+        from src.models.ml_outcome import build_ml_outcome
+        build_ml_outcome()
+    if args.with_dl and (args.refit or not (CONFIG.models_dir / "dl_outcome.keras").exists()):
+        from src.models.dl_outcome import build_dl_outcome
+        build_dl_outcome()
 
-    predictor = MatchPredictor(elo=EloModel.load(), dc=DixonColes.load())
+    predictor = MatchPredictor.load_default(with_ml=True, with_dl=args.with_dl)
     print(f"\nrunning Monte Carlo ({args.iterations or CONFIG.settings['simulation']['n_iterations']:,} "
           f"iterations)...")
     table = run_simulation(predictor, n=args.iterations, seed=args.seed)
