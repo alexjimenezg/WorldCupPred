@@ -10,15 +10,13 @@ venv/
 .ipynb_checkpoints/
 .pytest_cache/
 
-# Data: keep folder structure (.gitkeep) but not large/raw artifacts
+# Data: keep folder structure (.gitkeep) but not large/raw artifacts.
+# data/processed and models ARE committed (small, ~5 MB): they seed the
+# Streamlit Cloud deployment, which has no persistent disk. A local
+# recompute dirties them — push when you want the cloud seed updated.
 data/raw/*
 data/interim/*
-data/processed/*
 !data/**/.gitkeep
-
-# Trained models (regenerable); keep folder
-models/*
-!models/.gitkeep
 
 # Reports figures are regenerable
 reports/figures/*
