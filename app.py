@@ -62,6 +62,16 @@ def flag(team: str) -> str:
     return f"{FLAGS.get(team, '🏳️')} {team}"
 
 
+TZ_CDMX = "America/Mexico_City"
+
+
+def cdmx(ts: pd.Timestamp) -> pd.Timestamp:
+    """Display timezone: Mexico City (kickoffs arrive tz-aware UTC from ESPN)."""
+    if ts.tzinfo is None:
+        ts = ts.tz_localize("UTC")
+    return ts.tz_convert(TZ_CDMX)
+
+
 # ---------------------------------------------------------------- styling
 st.markdown(f"""
 <style>
@@ -336,10 +346,10 @@ def _match_card(m: dict, mp) -> str:
         cls, when = "lv-card live", ""
     elif m["state"] == "post":
         badge = "<span>FT</span>"
-        cls, when = "lv-card", f"{m['kickoff']:%b %d}"
+        cls, when = "lv-card", f"{cdmx(m['kickoff']):%b %d}"
     else:
         badge = "<span>Upcoming</span>"
-        cls, when = "lv-card", f"{m['kickoff']:%b %d · %H:%M} UTC"
+        cls, when = "lv-card", f"{cdmx(m['kickoff']):%b %d · %H:%M} CDMX"
 
     html = (f'<div class="{cls}"><div class="lv-head">{badge}<span>{when}</span></div>'
             f'<div class="lv-score"><span>{flag(home)}</span>'
@@ -370,6 +380,38 @@ def _match_card(m: dict, mp) -> str:
     return html + "</div>"
 
 
+def _countdown(m: dict) -> None:
+    """Ticking JS countdown to the next kickoff (CDMX time shown)."""
+    import streamlit.components.v1 as components
+    ms = int(m["kickoff"].timestamp() * 1000)
+    when = f"{cdmx(m['kickoff']):%a %b %d · %H:%M} CDMX"
+    components.html(f"""
+    <div style="display:flex;gap:1.1rem;align-items:center;flex-wrap:wrap;
+                font-family:'Source Sans Pro',-apple-system,sans-serif;color:#e8ecf6;
+                background:#141d33;border:1px solid #243153;border-radius:12px;
+                padding:.7rem 1.1rem;">
+      <span style="font-size:.74rem;color:#93a4c8;letter-spacing:.08em;">NEXT MATCH</span>
+      <span style="font-weight:700;font-size:1.02rem;">
+        {FLAGS.get(m['home'], '')} {m['home']} vs {m['away']} {FLAGS.get(m['away'], '')}
+      </span>
+      <span id="cd" style="font-size:1.5rem;font-weight:800;color:{GREEN};
+                           font-variant-numeric:tabular-nums;">…</span>
+      <span style="font-size:.78rem;color:#93a4c8;">{when}</span>
+    </div>
+    <script>
+      const t = {ms}, el = document.getElementById("cd");
+      function tick() {{
+        let d = t - Date.now();
+        if (d <= 0) {{ el.textContent = "KICK-OFF!"; return; }}
+        const h = Math.floor(d / 3.6e6), m_ = Math.floor(d % 3.6e6 / 6e4),
+              s = Math.floor(d % 6e4 / 1e3);
+        el.textContent = (h > 0 ? h + "h " : "") +
+          String(m_).padStart(2, "0") + "m " + String(s).padStart(2, "0") + "s";
+      }}
+      tick(); setInterval(tick, 1000);
+    </script>""", height=66)
+
+
 @st.fragment(run_every=60)
 def live_board():
     try:
@@ -381,6 +423,9 @@ def live_board():
     live = [m for m in board if m["state"] == "in"]
     done = [m for m in board if m["state"] == "post"]
     pre = [m for m in board if m["state"] == "pre"]
+
+    if pre:
+        _countdown(pre[0])
 
     if live:
         st.markdown(f"#### 🔴 In play now ({len(live)})")
@@ -449,7 +494,21 @@ with st.sidebar:
         hist = pd.read_parquet(_HISTORY_PATH)
         st.caption(f"Last simulation: {hist['ts'].max():%Y-%m-%d %H:%M}")
     st.divider()
-    st.caption("Sources: martj42/international_results (keyless) · "
+    with st.expander("🔔 Phone notifications"):
+        topic = CONFIG.env("NTFY_TOPIC")
+        st.markdown(
+            "Kickoff, goal and full-time alerts on your phone via "
+            "[ntfy](https://ntfy.sh) (free):\n\n"
+            "1. Install the **ntfy** app (App Store / Play Store).\n"
+            "2. **Subscribe to topic** "
+            + (f"`{topic}`" if topic else
+               "set in the repo's `NTFY_TOPIC` Actions variable") + ".\n"
+            "3. Done — a GitHub Action polls the live feed every ~5 min "
+            "during matches.\n\n"
+            "Configure in repo *Settings → Actions variables*: `NTFY_EVENTS` "
+            "(`kickoff,goal,fulltime`) and `NTFY_TEAMS` (e.g. `Mexico,Spain`) "
+            "to filter.")
+    st.caption("Sources: ESPN scoreboard + martj42/international_results (keyless) · "
                "football-data.org + The Odds API via `.env` keys.")
 
 if auto and not st.session_state.get("_auto_synced"):

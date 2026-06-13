@@ -1,0 +1,49 @@
+# Match notifications: poll ESPN every ~5 min during the tournament and push
+# kickoff / goal / full-time events to ntfy.sh (topic in the NTFY_TOPIC repo
+# variable — Settings > Secrets and variables > Actions > Variables).
+# State is carried between runs via the Actions cache so events fire once.
+name: match-notifications
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"   # GitHub may add a few minutes of jitter
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  notify:
+    if: github.repository_owner == 'alexjimenezg'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install minimal deps
+        run: pip install --quiet requests pandas pyyaml
+
+      - name: Restore notification state
+        uses: actions/cache/restore@v4
+        with:
+          path: .notify_state.json
+          key: notify-state-${{ github.run_id }}
+          restore-keys: notify-state-
+
+      - name: Poll scoreboard and publish events
+        env:
+          NTFY_TOPIC: ${{ vars.NTFY_TOPIC }}
+          NTFY_EVENTS: ${{ vars.NTFY_EVENTS || 'kickoff,goal,fulltime' }}
+          NTFY_TEAMS: ${{ vars.NTFY_TEAMS || '' }}
+        run: python scripts/notify_watch.py
+
+      - name: Save notification state
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: .notify_state.json
+          key: notify-state-${{ github.run_id }}

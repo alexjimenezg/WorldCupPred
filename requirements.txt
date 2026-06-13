@@ -10,6 +10,7 @@ plotly>=5.18          # interactive charts in the Streamlit app
 pyarrow               # parquet IO
 requests
 pyyaml                # config files
+tzdata                # IANA tz database (CDMX kickoff times on Windows/slim images)
 python-dotenv         # load API keys from .env
 tqdm                  # progress bars in long fits/sims
 

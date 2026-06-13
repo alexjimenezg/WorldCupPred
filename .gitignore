@@ -25,3 +25,4 @@ reports/figures/*
 # OS
 .DS_Store
 Thumbs.db
+.notify_state.json
