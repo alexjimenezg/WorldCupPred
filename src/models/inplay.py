@@ -47,7 +47,60 @@ def conditional_outcome(lambda_home: float, lambda_away: float, *,
         "exp_home": home_score + lambda_home * frac,
         "exp_away": away_score + lambda_away * frac,
         "minutes_left": max(0, 90 - minute),
+        "matrix": add,  # P(additional goals) — final score = current + index
     }
+
+
+def total_goals_dist(out: dict, home_score: int, away_score: int,
+                     max_total: int = 8) -> "pd.Series":
+    """P(total final goals = k) from a conditional_outcome result."""
+    import pandas as pd
+    add = out["matrix"]
+    base = home_score + away_score
+    probs: dict[int, float] = {}
+    for i in range(add.shape[0]):
+        for j in range(add.shape[1]):
+            k = base + i + j
+            probs[min(k, max_total)] = probs.get(min(k, max_total), 0.0) + float(add[i, j])
+    idx = list(range(0, max_total + 1))
+    return pd.Series([probs.get(k, 0.0) for k in idx], index=idx)
+
+
+def win_prob_timeline(lambda_home: float, lambda_away: float, events: list[dict], *,
+                      upto: int, final_home: int, final_away: int) -> "pd.DataFrame | None":
+    """Reconstruct W/D/L probability minute-by-minute from the goal events.
+
+    Validates that the reconstructed score at `upto` matches the actual one
+    (own-goal side conventions vary); returns None when it cannot be trusted.
+    """
+    import pandas as pd
+    goals = [e for e in events if e["type"] == "goal"]
+
+    def score_at(minute: int, flip_og: bool) -> tuple[int, int]:
+        h = a = 0
+        for g in goals:
+            if g["minute"] > minute:
+                continue
+            side = g["side"]
+            if flip_og and g.get("own_goal"):
+                side = "away" if side == "home" else "home"
+            h, a = (h + 1, a) if side == "home" else (h, a + 1)
+        return h, a
+
+    flip = False
+    if score_at(upto, False) != (final_home, final_away):
+        if score_at(upto, True) == (final_home, final_away):
+            flip = True
+        else:
+            return None  # events don't reconcile with the score
+
+    rows = []
+    for m in range(0, upto + 1):
+        h, a = score_at(m, flip)
+        c = conditional_outcome(lambda_home, lambda_away,
+                                home_score=h, away_score=a, minute=m)
+        rows.append((m, c["p_home"], c["p_draw"], c["p_away"]))
+    return pd.DataFrame(rows, columns=["minute", "home", "draw", "away"])
 
 
 if __name__ == "__main__":  # smoke test: leading 1-0 at the hour

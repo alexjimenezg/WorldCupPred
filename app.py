@@ -2,7 +2,9 @@
 
 Tabs:
   Live           ESPN live scoreboard joined to the model: in-play conditional W/D/L,
-                 stats, upcoming + played boards (auto-refreshes every minute)
+                 stats, match-detail visuals (win-prob timeline from the goal feed,
+                 projected scoreline, total-goals dist), played board (60s refresh)
+  Fixtures       all incoming matches grouped by day, filterable by team
   Odds           champion / stage probabilities for all 48 teams (plotly + table)
   Groups         live standings from recorded results + advance probabilities
   Bracket        full predicted wallchart R32 -> Final + road-to-title funnel
@@ -488,6 +490,107 @@ def _match_card(m: dict, mp) -> str:
     return html + "</div>"
 
 
+def _score_heat(matrix: np.ndarray, home: str, away: str, *, h0: int = 0, a0: int = 0,
+                n: int = 6, height: int = 320, key: str = "") -> None:
+    sub = matrix[:n, :n]
+    fig = px.imshow((sub * 100).round(1), text_auto=".1f",
+                    color_continuous_scale=["#0b1220", GREEN],
+                    labels=dict(x=f"{away} goals", y=f"{home} goals", color="P %"),
+                    x=[str(a0 + j) for j in range(n)],
+                    y=[str(h0 + i) for i in range(n)])
+    fig.update_layout(coloraxis_showscale=False)
+    st.plotly_chart(_plot(fig, height), width='stretch', key=key)
+
+
+def match_detail(m: dict, mp) -> None:
+    """Every visualization the feed supports for one match: win-probability
+    timeline (reconstructed from the goal events), projected/expected scoreline
+    heatmap, total-goals distribution, and the event feed."""
+    from src.models.inplay import (conditional_outcome, total_goals_dist,
+                                   win_prob_timeline)
+    home, away = m["home"], m["away"]
+    if home not in CONFIG.teams or away not in CONFIG.teams:
+        st.info("Teams not in the 2026 field.")
+        return
+    pre = mp.predict(home, away, not CONFIG.is_host(home))
+    events = m.get("events", [])
+    kid = f"{home}-{away}"
+
+    if events:
+        icons = {"goal": "⚽", "yellow": "🟨", "red": "🟥"}
+        bits = []
+        for e in events:
+            who = e["player"] or (home if e["side"] == "home" else away)
+            suffix = " (OG)" if e["own_goal"] else " (pen)" if e["penalty"] else ""
+            bits.append(f"{e['minute']}' {icons[e['type']]} {who}{suffix}")
+        st.markdown("**Events:** " + " · ".join(bits))
+
+    upto = m["minute"] if m["state"] == "in" else 90
+    c1, c2 = st.columns([3, 2])
+
+    with c1:
+        if m["state"] != "pre":
+            st.markdown("**Win probability through the match**")
+            tl = win_prob_timeline(pre["lambda_home"], pre["lambda_away"], events,
+                                   upto=upto, final_home=m["home_score"],
+                                   final_away=m["away_score"])
+            if tl is None:
+                st.caption("Goal feed doesn't reconcile with the score — "
+                           "timeline unavailable for this match.")
+            else:
+                fig = go.Figure()
+                for col, name, color in (("home", flag(home), "rgba(16,185,129,.75)"),
+                                         ("draw", "Draw", "rgba(100,116,139,.75)"),
+                                         ("away", flag(away), "rgba(59,130,246,.75)")):
+                    fig.add_trace(go.Scatter(
+                        x=tl["minute"], y=tl[col] * 100, name=name, mode="none",
+                        stackgroup="one", fillcolor=color))
+                for e in events:
+                    if e["type"] == "goal":
+                        fig.add_vline(x=e["minute"], line_color="#fff",
+                                      line_dash="dot", opacity=.55)
+                        fig.add_annotation(x=e["minute"], y=103, text="⚽",
+                                           showarrow=False)
+                fig.update_layout(yaxis=dict(title="P(final result) %",
+                                             range=[0, 106]),
+                                  xaxis=dict(title="minute", range=[0, max(upto, 1)]),
+                                  legend=dict(orientation="h", y=-0.25))
+                st.plotly_chart(_plot(fig, 340), width='stretch', key=f"tl-{kid}")
+        else:
+            st.markdown("**Expected scoreline** (pre-match)")
+            _score_heat(pre["scoreline"], home, away, height=340, key=f"hm-{kid}")
+
+    with c2:
+        if m["state"] == "in":
+            cond = conditional_outcome(pre["lambda_home"], pre["lambda_away"],
+                                       home_score=m["home_score"],
+                                       away_score=m["away_score"],
+                                       minute=m["minute"])
+            st.markdown(f"**Projected final score** (from {m['home_score']}–"
+                        f"{m['away_score']}, {m['minute']}')")
+            _score_heat(cond["matrix"], home, away, h0=m["home_score"],
+                        a0=m["away_score"], n=5, height=240, key=f"cm-{kid}")
+            dist = total_goals_dist(cond, m["home_score"], m["away_score"])
+        elif m["state"] == "pre":
+            cond = conditional_outcome(pre["lambda_home"], pre["lambda_away"],
+                                       home_score=0, away_score=0, minute=0)
+            dist = total_goals_dist(cond, 0, 0)
+        else:
+            st.markdown("**What the model expected pre-match**")
+            _score_heat(pre["scoreline"], home, away, n=5, height=240,
+                        key=f"pm-{kid}")
+            dist = None
+        if dist is not None:
+            st.markdown("**Total goals (final)**")
+            fig = go.Figure(go.Bar(
+                x=[str(k) if k < 8 else "8+" for k in dist.index],
+                y=dist.values * 100, marker_color=BLUE,
+                text=[f"{v*100:.0f}%" for v in dist.values],
+                textposition="outside"))
+            fig.update_layout(yaxis_title="P %", xaxis_title="goals")
+            st.plotly_chart(_plot(fig, 240), width='stretch', key=f"tg-{kid}")
+
+
 def _countdown(m: dict) -> None:
     """Ticking JS countdown to the next kickoff (CDMX time shown)."""
     import streamlit.components.v1 as components
@@ -556,11 +659,27 @@ def live_board():
         st.warning(f"{len(missing)} finished match(es) not yet in the odds — "
                    "sync from the sidebar to refresh the simulation.")
 
+    # ---- every visualization for one match ----
+    choices = live + pre[:4] + list(reversed(done))
+    if choices:
+        st.markdown("#### 🔬 Match detail")
+        state_tag = {"in": "🔴 live", "pre": "upcoming", "post": "FT"}
+        ix = st.selectbox(
+            "Match", range(len(choices)),
+            format_func=lambda i: (f"{choices[i]['home']} "
+                                   f"{choices[i]['home_score']}–"
+                                   f"{choices[i]['away_score']} "
+                                   f"{choices[i]['away']}  ·  "
+                                   f"{state_tag[choices[i]['state']]}"),
+            key="detail_pick", label_visibility="collapsed")
+        match_detail(choices[ix], mp)
+
     if pre:
         st.markdown("#### ⏭️ Next up")
         st.markdown('<div class="grid g-mini">'
-                    + "".join(_match_card(m, mp) for m in pre[:6])
+                    + "".join(_match_card(m, mp) for m in pre[:3])
                     + "</div>", unsafe_allow_html=True)
+        st.caption("Full schedule with a team filter → **📅 Fixtures** tab.")
 
     if done:
         st.markdown(f"#### ✅ Played ({len(done)})")
@@ -631,9 +750,9 @@ if auto and not st.session_state.get("_auto_synced"):
         st.toast(f"Auto-sync failed: {exc}")
 
 # ---------------------------------------------------------------- tabs
-(tab_live, tab_odds, tab_groups, tab_bracket, tab_bet, tab_history,
+(tab_live, tab_fix, tab_odds, tab_groups, tab_bracket, tab_bet, tab_history,
  tab_match, tab_models, tab_kb) = st.tabs(
-    ["🔴 Live", "🏆 Odds", "📊 Groups", "🛣️ Bracket", "💰 Value",
+    ["🔴 Live", "📅 Fixtures", "🏆 Odds", "📊 Groups", "🛣️ Bracket", "💰 Value",
      "📈 Trends", "⚔️ Versus", "🧠 Models", "📚 Vault"])
 
 table = load_table()
@@ -641,6 +760,44 @@ table = load_table()
 # ---------------------------------------------------------------- Live
 with tab_live:
     live_board()
+
+# ---------------------------------------------------------------- Fixtures
+with tab_fix:
+    st.subheader("Incoming matches")
+    try:
+        fx_board = fetch_board()
+    except Exception as exc:
+        fx_board = []
+        st.warning(f"Schedule feed unreachable: {exc}")
+    upcoming_all = [m for m in fx_board if m["state"] == "pre"]
+
+    c1, c2 = st.columns([3, 2])
+    sel_team = c1.selectbox("Filter by team", ["All teams"] + CONFIG.teams,
+                            format_func=lambda t: t if t == "All teams" else flag(t))
+    if sel_team != "All teams":
+        upcoming_all = [m for m in upcoming_all
+                        if sel_team in (m["home"], m["away"])]
+        if table is not None and sel_team in set(table["team"]):
+            r = table.set_index("team").loc[sel_team]
+            c2.metric(f"{flag(sel_team)}",
+                      f"{r['champion']*100:.1f}% champion",
+                      f"{r['round32']*100:.0f}% reach R32")
+
+    st.caption(f"**{len(upcoming_all)}** match(es) scheduled · times in CDMX · "
+               "strips show the model's pre-match W/D/L")
+    if upcoming_all:
+        mp_fx = load_predictor(False)
+        from itertools import groupby
+        for day, day_ms in groupby(upcoming_all,
+                                   key=lambda m: cdmx(m["kickoff"]).date()):
+            day_ms = list(day_ms)
+            st.markdown(f"##### {day:%A, %B %d}")
+            st.markdown('<div class="grid g-mini">'
+                        + "".join(_match_card(x, mp_fx) for x in day_ms)
+                        + "</div>", unsafe_allow_html=True)
+    elif sel_team != "All teams":
+        st.info(f"No more scheduled matches for {sel_team} on the feed — "
+                "knockout pairings appear once the groups settle.")
 
 # ---------------------------------------------------------------- Odds
 with tab_odds:

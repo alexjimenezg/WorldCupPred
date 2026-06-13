@@ -95,6 +95,7 @@ def fetch_scoreboard(dates: str | None = None, *, timeout: int = 20) -> list[dic
             name = CONFIG.normalize(c.get("team", {}).get("displayName", ""))
             sides[c.get("homeAway", "home")] = {
                 "team": name,
+                "id": str(c.get("team", {}).get("id", "")),
                 "score": int(c.get("score") or 0),
                 "stats": {s.get("name"): s.get("displayValue")
                           for s in c.get("statistics", [])},
@@ -115,9 +116,39 @@ def fetch_scoreboard(dates: str | None = None, *, timeout: int = 20) -> list[dic
             "home_score": h["score"], "away_score": a["score"],
             "stats": stats,
             "odds": _parse_odds(comp),
+            "events": _parse_events(comp, h["id"], a["id"]),
         })
     out.sort(key=lambda m: m["kickoff"])
     return out
+
+
+def _parse_events(comp: dict, home_id: str, away_id: str) -> list[dict]:
+    """Goals and cards with minute, side and player, sorted by minute."""
+    out = []
+    for d in comp.get("details", []) or []:
+        text = (d.get("type") or {}).get("text", "")
+        m = _CLOCK_RE.match(str((d.get("clock") or {}).get("displayValue", "")))
+        minute = min(int(m.group(1)), 90) if m else 0
+        tid = str((d.get("team") or {}).get("id", ""))
+        side = "home" if tid == home_id else "away" if tid == away_id else None
+        if side is None:
+            continue
+        if d.get("scoringPlay"):
+            kind = "goal"
+        elif d.get("redCard") or "Red" in text:
+            kind = "red"
+        elif d.get("yellowCard") or "Yellow" in text:
+            kind = "yellow"
+        else:
+            continue
+        players = d.get("athletesInvolved") or []
+        out.append({
+            "minute": minute, "type": kind, "side": side,
+            "player": players[0].get("shortName", "") if players else "",
+            "own_goal": bool(d.get("ownGoal")),
+            "penalty": bool(d.get("penaltyKick")),
+        })
+    return sorted(out, key=lambda e: e["minute"])
 
 
 def import_finished_to_store(store=None) -> int:
