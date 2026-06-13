@@ -6,8 +6,8 @@ confederation: CAF
 elo: 1510
 fifa_rank: 81
 host: False
-champion_pct: 0.01
-updated: 2026-06-12 15:06
+champion_pct: 0.0
+updated: 2026-06-12 23:49
 ---
 
 # Ghana
@@ -19,14 +19,14 @@ updated: 2026-06-12 15:06
 | --- | --- |
 | Champion | 0.0% |
 | Reach final | 0.0% |
-| Reach semi-final | 0.1% |
+| Reach semi-final | 0.2% |
 | Reach quarter-final | 0.8% |
-| Reach round of 16 | 4.2% |
-| Reach round of 32 | 28.0% |
-| Win [[Group L]] | 1.7% |
+| Reach round of 16 | 4.4% |
+| Reach round of 32 | 28.7% |
+| Win [[Group L]] | 1.8% |
 
 ## Group L rivals
 [[England]], [[Croatia]], [[Panama]]
 
 ## Links
-Confederation [[CAF]] · run [[Simulation 2026-06-12 1506]] · [[00-Index|Index]]
+Confederation [[CAF]] · run [[Simulation 2026-06-12 2349]] · [[00-Index|Index]]

@@ -7,7 +7,7 @@ elo: 1421
 fifa_rank: 96
 host: False
 champion_pct: 0.0
-updated: 2026-06-12 15:06
+updated: 2026-06-12 23:49
 ---
 
 # Qatar
@@ -21,12 +21,12 @@ updated: 2026-06-12 15:06
 | Reach final | 0.0% |
 | Reach semi-final | 0.0% |
 | Reach quarter-final | 0.3% |
-| Reach round of 16 | 2.5% |
+| Reach round of 16 | 2.4% |
 | Reach round of 32 | 17.8% |
-| Win [[Group B]] | 1.5% |
+| Win [[Group B]] | 1.6% |
 
 ## Group B rivals
 [[Canada]], [[Bosnia and Herzegovina]], [[Switzerland]]
 
 ## Links
-Confederation [[AFC]] · run [[Simulation 2026-06-12 1506]] · [[00-Index|Index]]
+Confederation [[AFC]] · run [[Simulation 2026-06-12 2349]] · [[00-Index|Index]]

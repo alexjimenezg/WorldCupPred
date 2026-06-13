@@ -6,8 +6,8 @@ confederation: CONMEBOL
 elo: 1991
 fifa_rank: 5
 host: False
-champion_pct: 6.31
-updated: 2026-06-12 15:06
+champion_pct: 6.19
+updated: 2026-06-12 23:49
 ---
 
 # Brazil
@@ -17,16 +17,16 @@ updated: 2026-06-12 15:06
 ## Title odds (latest)
 | Stage | Probability |
 | --- | --- |
-| Champion | 6.3% |
-| Reach final | 12.8% |
-| Reach semi-final | 24.0% |
-| Reach quarter-final | 40.4% |
-| Reach round of 16 | 62.7% |
-| Reach round of 32 | 96.9% |
-| Win [[Group C]] | 57.1% |
+| Champion | 6.2% |
+| Reach final | 12.6% |
+| Reach semi-final | 24.2% |
+| Reach quarter-final | 40.8% |
+| Reach round of 16 | 63.1% |
+| Reach round of 32 | 96.6% |
+| Win [[Group C]] | 56.3% |
 
 ## Group C rivals
 [[Morocco]], [[Haiti]], [[Scotland]]
 
 ## Links
-Confederation [[CONMEBOL]] · run [[Simulation 2026-06-12 1506]] · [[00-Index|Index]]
+Confederation [[CONMEBOL]] · run [[Simulation 2026-06-12 2349]] · [[00-Index|Index]]

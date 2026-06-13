@@ -108,6 +108,7 @@ def fetch_scoreboard(dates: str | None = None, *, timeout: int = 20) -> list[dic
             if key in h["stats"] or key in a["stats"]:
                 stats[label] = (h["stats"].get(key, "0"), a["stats"].get(key, "0"))
         out.append({
+            "id": str(ev.get("id", "")),
             "kickoff": pd.Timestamp(ev.get("date")),
             "state": state,
             "detail": status.get("type", {}).get("detail", ""),

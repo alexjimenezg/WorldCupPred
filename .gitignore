@@ -26,3 +26,6 @@ reports/figures/*
 .DS_Store
 Thumbs.db
 .notify_state.json
+
+# ESPN per-match player stats cache (regenerable)
+data/interim/player_cache/

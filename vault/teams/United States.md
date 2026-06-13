@@ -6,8 +6,8 @@ confederation: CONCACAF
 elo: 1726
 fifa_rank: 39
 host: True
-champion_pct: 0.1
-updated: 2026-06-12 15:06
+champion_pct: 0.3
+updated: 2026-06-12 23:49
 ---
 
 # United States
@@ -17,16 +17,16 @@ updated: 2026-06-12 15:06
 ## Title odds (latest)
 | Stage | Probability |
 | --- | --- |
-| Champion | 0.1% |
-| Reach final | 0.6% |
-| Reach semi-final | 2.0% |
-| Reach quarter-final | 8.6% |
-| Reach round of 16 | 28.4% |
-| Reach round of 32 | 67.8% |
-| Win [[Group D]] | 25.6% |
+| Champion | 0.3% |
+| Reach final | 1.1% |
+| Reach semi-final | 4.3% |
+| Reach quarter-final | 17.0% |
+| Reach round of 16 | 48.0% |
+| Reach round of 32 | 96.8% |
+| Win [[Group D]] | 56.5% |
 
 ## Group D rivals
 [[Paraguay]], [[Australia]], [[Turkey]]
 
 ## Links
-Confederation [[CONCACAF]] · run [[Simulation 2026-06-12 1506]] · [[00-Index|Index]]
+Confederation [[CONCACAF]] · run [[Simulation 2026-06-12 2349]] · [[00-Index|Index]]

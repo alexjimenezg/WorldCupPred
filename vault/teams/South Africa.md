@@ -6,8 +6,8 @@ confederation: CAF
 elo: 1511
 fifa_rank: 80
 host: False
-champion_pct: 0.01
-updated: 2026-06-12 15:06
+champion_pct: 0.0
+updated: 2026-06-12 23:49
 ---
 
 # South Africa
@@ -20,13 +20,13 @@ updated: 2026-06-12 15:06
 | Champion | 0.0% |
 | Reach final | 0.0% |
 | Reach semi-final | 0.2% |
-| Reach quarter-final | 1.4% |
+| Reach quarter-final | 1.1% |
 | Reach round of 16 | 6.2% |
-| Reach round of 32 | 25.0% |
-| Win [[Group A]] | 0.8% |
+| Reach round of 32 | 25.2% |
+| Win [[Group A]] | 0.9% |
 
 ## Group A rivals
 [[Mexico]], [[South Korea]], [[Czech Republic]]
 
 ## Links
-Confederation [[CAF]] · run [[Simulation 2026-06-12 1506]] · [[00-Index|Index]]
+Confederation [[CAF]] · run [[Simulation 2026-06-12 2349]] · [[00-Index|Index]]

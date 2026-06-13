@@ -6,8 +6,8 @@ confederation: CONMEBOL
 elo: 1982
 fifa_rank: 7
 host: False
-champion_pct: 4.49
-updated: 2026-06-12 15:06
+champion_pct: 4.46
+updated: 2026-06-12 23:49
 ---
 
 # Colombia
@@ -18,15 +18,15 @@ updated: 2026-06-12 15:06
 | Stage | Probability |
 | --- | --- |
 | Champion | 4.5% |
-| Reach final | 9.5% |
-| Reach semi-final | 18.5% |
-| Reach quarter-final | 33.3% |
-| Reach round of 16 | 59.6% |
-| Reach round of 32 | 88.8% |
-| Win [[Group K]] | 39.1% |
+| Reach final | 9.4% |
+| Reach semi-final | 18.4% |
+| Reach quarter-final | 33.7% |
+| Reach round of 16 | 59.9% |
+| Reach round of 32 | 88.7% |
+| Win [[Group K]] | 38.7% |
 
 ## Group K rivals
 [[Portugal]], [[DR Congo]], [[Uzbekistan]]
 
 ## Links
-Confederation [[CONMEBOL]] · run [[Simulation 2026-06-12 1506]] · [[00-Index|Index]]
+Confederation [[CONMEBOL]] · run [[Simulation 2026-06-12 2349]] · [[00-Index|Index]]

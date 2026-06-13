@@ -1,7 +1,7 @@
 ---
 type: group
 group: F
-updated: 2026-06-12 15:06
+updated: 2026-06-12 23:49
 ---
 
 # Group F
@@ -10,9 +10,9 @@ Teams: [[Netherlands]], [[Japan]], [[Sweden]], [[Tunisia]]
 
 | Team | Win group | Reach R32 | Champion |
 | --- | --- | --- | --- |
-| [[Netherlands]] | 51.7% | 93.0% | 3.2% |
-| [[Japan]] | 35.6% | 88.2% | 2.2% |
-| [[Sweden]] | 8.3% | 50.3% | 0.1% |
-| [[Tunisia]] | 4.4% | 35.7% | 0.0% |
+| [[Netherlands]] | 51.0% | 92.5% | 3.5% |
+| [[Japan]] | 36.5% | 88.6% | 2.2% |
+| [[Sweden]] | 8.2% | 49.9% | 0.1% |
+| [[Tunisia]] | 4.3% | 36.0% | 0.0% |
 
-Run [[Simulation 2026-06-12 1506]] · [[00-Index|Index]]
+Run [[Simulation 2026-06-12 2349]] · [[00-Index|Index]]

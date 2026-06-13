@@ -6,8 +6,8 @@ confederation: UEFA
 elo: 2063
 fifa_rank: 3
 host: False
-champion_pct: 8.93
-updated: 2026-06-12 15:06
+champion_pct: 9.18
+updated: 2026-06-12 23:49
 ---
 
 # France
@@ -17,16 +17,16 @@ updated: 2026-06-12 15:06
 ## Title odds (latest)
 | Stage | Probability |
 | --- | --- |
-| Champion | 8.9% |
-| Reach final | 16.3% |
-| Reach semi-final | 29.0% |
+| Champion | 9.2% |
+| Reach final | 16.6% |
+| Reach semi-final | 28.9% |
 | Reach quarter-final | 44.0% |
-| Reach round of 16 | 69.1% |
-| Reach round of 32 | 94.6% |
-| Win [[Group I]] | 54.8% |
+| Reach round of 16 | 70.0% |
+| Reach round of 32 | 94.9% |
+| Win [[Group I]] | 55.0% |
 
 ## Group I rivals
 [[Senegal]], [[Iraq]], [[Norway]]
 
 ## Links
-Confederation [[UEFA]] · run [[Simulation 2026-06-12 1506]] · [[00-Index|Index]]
+Confederation [[UEFA]] · run [[Simulation 2026-06-12 2349]] · [[00-Index|Index]]

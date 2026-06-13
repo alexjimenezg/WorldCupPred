@@ -1,7 +1,7 @@
 ---
 type: data-source
 source: fifa-rankings
-updated: 2026-06-12 15:06
+updated: 2026-06-12 23:49
 ---
 
 # fifa-rankings

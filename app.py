@@ -8,6 +8,8 @@ Tabs:
   Odds           champion / stage probabilities for all 48 teams (plotly + table)
   Groups         live standings from recorded results + advance probabilities
   Bracket        full predicted wallchart R32 -> Final + road-to-title funnel
+  Players        leaderboards (scorers/assists/keepers/shooting/rating/discipline)
+                 + a 4-3-3 dream team, whole-tournament or per round (ESPN rosters)
   Value          model vs bookmaker odds (edge, EV, Kelly) + bet builder + parlay slip
   Trends         champion odds over time (one snapshot per saved simulation)
   Versus         any two teams (neutral toggle) -> ensemble W/D/L + scoreline heatmap
@@ -418,6 +420,14 @@ def fetch_board():
     return espn_live.fetch_scoreboard()
 
 
+@st.cache_data(ttl=300, show_spinner="Loading player stats…")
+def load_players(_board_sig: str):
+    """Per-player tournament frame. Keyed by a signature of finished match ids so a
+    new final result busts the cache; finished matches are disk-cached underneath."""
+    from src.data import espn_players
+    return espn_players.build_player_frame(fetch_board())
+
+
 def _pstrip(ph: float, pd_: float, pa: float) -> str:
     seg = ""
     for v, c in ((ph, GREEN), (pd_, "#64748b"), (pa, BLUE)):
@@ -750,10 +760,10 @@ if auto and not st.session_state.get("_auto_synced"):
         st.toast(f"Auto-sync failed: {exc}")
 
 # ---------------------------------------------------------------- tabs
-(tab_live, tab_fix, tab_odds, tab_groups, tab_bracket, tab_bet, tab_history,
- tab_match, tab_models, tab_kb) = st.tabs(
-    ["🔴 Live", "📅 Fixtures", "🏆 Odds", "📊 Groups", "🛣️ Bracket", "💰 Value",
-     "📈 Trends", "⚔️ Versus", "🧠 Models", "📚 Vault"])
+(tab_live, tab_fix, tab_odds, tab_groups, tab_bracket, tab_players, tab_bet,
+ tab_history, tab_match, tab_models, tab_kb) = st.tabs(
+    ["🔴 Live", "📅 Fixtures", "🏆 Odds", "📊 Groups", "🛣️ Bracket", "⭐ Players",
+     "💰 Value", "📈 Trends", "⚔️ Versus", "🧠 Models", "📚 Vault"])
 
 table = load_table()
 
@@ -972,6 +982,131 @@ with tab_bracket:
             marker=dict(color=[BLUE, "#2f6fe0", GREEN, "#0ea36e", "#f59e0b", RED]),
         ))
         st.plotly_chart(_plot(fig, 420), width='stretch')
+
+# ---------------------------------------------------------------- Players
+def _leader_chart(df: pd.DataFrame, value_col: str, title: str, color: str,
+                  fmt: str = "{:.0f}", n: int = 12, key: str = "") -> None:
+    sub = df[df[value_col] > 0].sort_values(value_col, ascending=False).head(n)
+    if sub.empty:
+        st.caption(f"No {title.lower()} recorded yet.")
+        return
+    sub = sub.iloc[::-1]
+    labels = [f"{flag(t)} · {p.split()[-1] if len(p.split())>1 else p}"
+              for p, t in zip(sub["player"], sub["team"])]
+    fig = go.Figure(go.Bar(
+        x=sub[value_col], y=[f"{p}" for p in sub["player"]], orientation="h",
+        marker_color=color, customdata=sub["team"],
+        text=[fmt.format(v) for v in sub[value_col]], textposition="outside",
+        hovertemplate="%{y} (%{customdata})<br>" + title + ": %{x}<extra></extra>"))
+    fig.update_layout(title=title, yaxis=dict(tickfont=dict(size=11)))
+    st.plotly_chart(_plot(fig, 30 + 32 * len(sub)), width='stretch', key=key)
+
+
+with tab_players:
+    st.subheader("Top players & dream team")
+    try:
+        pboard = fetch_board()
+        sig = ",".join(sorted(m["id"] for m in pboard if m["state"] == "post"))
+        pdf = load_players(sig)
+    except Exception as exc:
+        pdf = pd.DataFrame()
+        st.warning(f"Player feed unreachable: {exc}")
+
+    if pdf.empty:
+        st.info("No player stats yet — they appear here once matches are played. "
+                "(Source: ESPN match rosters.)")
+    else:
+        from src.data import espn_players as ep
+        stages_present = [s for s in ["group", "R32", "R16", "QF", "SF", "final"]
+                          if s in set(pdf["stage"])]
+        nice = {"group": "Group stage", "R32": "Round of 32", "R16": "Round of 16",
+                "QF": "Quarter-finals", "SF": "Semi-finals", "final": "Final"}
+        c1, c2 = st.columns([2, 3])
+        scope = c1.selectbox("Round", ["Whole tournament"]
+                             + [nice[s] for s in stages_present])
+        if scope != "Whole tournament":
+            code = {v: k for k, v in nice.items()}[scope]
+            view = pdf[pdf["stage"] == code]
+        else:
+            view = pdf
+        agg = ep.aggregate(view)
+        c2.caption(f"{int(view['event_id'].nunique())} match(es) · "
+                   f"{len(agg)} players · stats from ESPN rosters")
+
+        sub = st.radio("View", ["⭐ Dream team", "⚽ Scorers", "🅰️ Assists",
+                                "🥅 Goalkeepers", "🎯 Shooting", "🏅 Top rated",
+                                "🟨 Discipline"], horizontal=True,
+                       label_visibility="collapsed")
+
+        if sub == "⭐ Dream team":
+            st.caption(f"Best XI (4-3-3) by performance rating — {scope.lower()}. "
+                       "Rating is our own transparent score "
+                       "(goals ×4, assists ×3, on-target ×0.5, saves ×0.5, "
+                       "clean sheet ×2, minus cards & own goals), not an official "
+                       "metric. Picked from players' starting positions.")
+            xi = ep.best_xi(agg)
+            role_label = {"GK": "🥅 Goalkeeper", "DEF": "🛡️ Defenders",
+                          "MID": "🎯 Midfielders", "FWD": "⚡ Forwards"}
+            for role in ["FWD", "MID", "DEF", "GK"]:
+                line = xi[role]
+                if line.empty:
+                    continue
+                st.markdown(f"**{role_label[role]}**")
+                cards = ""
+                for _, r in line.iterrows():
+                    extra = (f"{int(r['saves'])} saves · {int(r['clean_sheet'])} CS"
+                             if role == "GK"
+                             else f"{int(r['goals'])} G · {int(r['assists'])} A")
+                    cards += (f'<div class="wc-card"><div class="t">{flag(r["team"])}'
+                              f'</div><div class="v" style="font-size:1.05rem">'
+                              f'{r["player"]}</div>'
+                              f'<div class="s">{extra} · rating {r["rating"]:.1f}</div>'
+                              f'</div>')
+                st.markdown(f'<div class="grid g-mini">{cards}</div>',
+                            unsafe_allow_html=True)
+        elif sub == "⚽ Scorers":
+            _leader_chart(agg, "goals", "Goals", GREEN, key="lc-g")
+        elif sub == "🅰️ Assists":
+            _leader_chart(agg, "assists", "Assists", BLUE, key="lc-a")
+        elif sub == "🥅 Goalkeepers":
+            gk = agg[agg["role"] == "GK"]
+            c1, c2 = st.columns(2)
+            with c1:
+                _leader_chart(gk, "saves", "Saves", "#f59e0b", key="lc-sv")
+            with c2:
+                _leader_chart(gk, "clean_sheet", "Clean sheets", GREEN, key="lc-cs")
+            show = (gk[gk["apps"] > 0].sort_values("saves", ascending=False)
+                    [["player", "team", "apps", "saves", "conceded",
+                      "clean_sheet", "save_pct"]].head(15).copy())
+            show["team"] = show["team"].map(flag)
+            show["save_pct"] *= 100
+            st.dataframe(show, hide_index=True, width='stretch', column_config={
+                "apps": "apps", "clean_sheet": "clean sheets", "conceded": "GA",
+                "save_pct": st.column_config.NumberColumn("save %", format="%.0f%%")})
+        elif sub == "🎯 Shooting":
+            c1, c2 = st.columns(2)
+            with c1:
+                _leader_chart(agg, "shots", "Shots", BLUE, key="lc-sh")
+            with c2:
+                _leader_chart(agg, "sot", "Shots on target", GREEN, key="lc-sot")
+        elif sub == "🏅 Top rated":
+            _leader_chart(agg, "rating", "Performance rating", RED,
+                          fmt="{:.1f}", key="lc-rt")
+            st.caption("Composite rating (ours): goals ×4, assists ×3, on-target "
+                       "×0.5, saves ×0.5, clean sheet ×2, minus cards & own goals.")
+        elif sub == "🟨 Discipline":
+            disc = agg.assign(cards=agg["yellow"] + agg["red"] * 2)
+            c1, c2 = st.columns(2)
+            with c1:
+                _leader_chart(disc, "cards", "Card points (Y=1, R=2)", "#facc15",
+                              key="lc-cd")
+            with c2:
+                _leader_chart(agg, "fouls", "Fouls committed", "#f87171",
+                              key="lc-fl")
+
+        st.caption("⚠️ Passing accuracy and tackles/interceptions aren't in the free "
+                   "feed for every player (only per-match top performers), so they're "
+                   "omitted to avoid a misleading leaderboard.")
 
 # ---------------------------------------------------------------- Value
 with tab_bet:
