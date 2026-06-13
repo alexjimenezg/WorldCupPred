@@ -6,6 +6,7 @@ Tabs:
   Odds           champion / stage probabilities for all 48 teams (plotly + table)
   Groups         live standings from recorded results + advance probabilities
   Bracket        full predicted wallchart R32 -> Final + road-to-title funnel
+  Value          model vs bookmaker odds (edge, EV, Kelly) + bet builder + parlay slip
   Trends         champion odds over time (one snapshot per saved simulation)
   Versus         any two teams (neutral toggle) -> ensemble W/D/L + scoreline heatmap
   Models         engine info, weights, and a quick walk-forward backtest
@@ -616,10 +617,10 @@ if auto and not st.session_state.get("_auto_synced"):
         st.toast(f"Auto-sync failed: {exc}")
 
 # ---------------------------------------------------------------- tabs
-(tab_live, tab_odds, tab_groups, tab_bracket, tab_history,
+(tab_live, tab_odds, tab_groups, tab_bracket, tab_bet, tab_history,
  tab_match, tab_models, tab_kb) = st.tabs(
-    ["🔴 Live", "🏆 Odds", "📊 Groups", "🛣️ Bracket", "📈 Trends",
-     "⚔️ Versus", "🧠 Models", "📚 Vault"])
+    ["🔴 Live", "🏆 Odds", "📊 Groups", "🛣️ Bracket", "💰 Value",
+     "📈 Trends", "⚔️ Versus", "🧠 Models", "📚 Vault"])
 
 table = load_table()
 
@@ -771,6 +772,170 @@ with tab_bracket:
             marker=dict(color=[BLUE, "#2f6fe0", GREEN, "#0ea36e", "#f59e0b", RED]),
         ))
         st.plotly_chart(_plot(fig, 420), width='stretch')
+
+# ---------------------------------------------------------------- Value
+with tab_bet:
+    st.subheader("Value vs the market")
+    st.caption("Model probabilities against the bookmaker 3-way prices that ride along "
+               "in the ESPN feed (de-vigged). **Edge** = model − implied; **EV** = "
+               "expected profit per unit. ⚠️ Big edges on longshots usually mean the "
+               "model is less sure of the favorite than the market — that's "
+               "disagreement, not free money. If you bet: small stakes, fractional "
+               "Kelly, never the full fraction. 18+, gamble responsibly.")
+    from src import betting as bet
+
+    try:
+        board = fetch_board()
+    except Exception as exc:
+        board = []
+        st.warning(f"Live feed unreachable: {exc}")
+
+    mp = load_predictor(False)
+    vb = bet.value_board(mp, board)
+    if vb.empty:
+        st.info("No upcoming matches with bookmaker odds on the feed right now.")
+    else:
+        c1, c2 = st.columns([2, 1])
+        min_edge = c1.slider("Minimum edge (percentage points)", 0.0, 15.0, 3.0, 0.5)
+        max_odds = c2.select_slider("Max odds", options=[3, 5, 8, 15, 50], value=8,
+                                    help="Filter out extreme longshots where the "
+                                         "model is least reliable.")
+        picks = vb[(vb["edge"] >= min_edge / 100) & (vb["ev"] > 0)
+                   & (vb["odds"] <= max_odds)].copy()
+        st.markdown(f"**{len(picks)} value pick(s)** "
+                    f"(of {len(vb)} priced outcomes, {vb['match'].nunique()} matches)")
+        if len(picks):
+            show = picks.copy()
+            show["when"] = show["kickoff"].map(lambda t: f"{cdmx(t):%b %d %H:%M}")
+            show["match"] = show.apply(
+                lambda r: f"{FLAGS.get(r['match'].split(' vs ')[0], '')} "
+                          f"{r['match']}", axis=1)
+            for c in ["implied", "model", "edge", "ev"]:
+                show[c] = show[c] * 100
+            show["stake"] = show["kelly"] / 4 * 100  # quarter Kelly, % of bankroll
+            st.dataframe(
+                show[["when", "match", "pick", "odds", "implied", "model",
+                      "edge", "ev", "stake"]],
+                width='stretch', hide_index=True,
+                column_config={
+                    "when": "kickoff (CDMX)", "odds": st.column_config.NumberColumn(
+                        "odds", format="%.2f"),
+                    "implied": st.column_config.NumberColumn("implied %", format="%.1f%%"),
+                    "model": st.column_config.NumberColumn("model %", format="%.1f%%"),
+                    "edge": st.column_config.ProgressColumn(
+                        "edge", format="%.1f pp", min_value=0,
+                        max_value=float(show["edge"].max())),
+                    "ev": st.column_config.NumberColumn("EV", format="%.1f%%"),
+                    "stake": st.column_config.NumberColumn(
+                        "¼-Kelly stake", format="%.1f%% bank"),
+                })
+        with st.expander("Full market comparison (all priced outcomes)"):
+            full = vb.copy()
+            full["when"] = full["kickoff"].map(lambda t: f"{cdmx(t):%b %d %H:%M}")
+            for c in ["implied", "model", "edge", "ev"]:
+                full[c] = (full[c] * 100).round(1)
+            st.dataframe(full[["when", "match", "pick", "odds", "implied",
+                               "model", "edge", "ev", "book"]],
+                         width='stretch', hide_index=True, height=420)
+
+    st.divider()
+    st.subheader("🧮 Bet builder — price anything")
+    st.caption("Pick a bet, the model tells you its probability and the fair odds; "
+               "enter the bookmaker's price to see your edge.")
+
+    kind = st.radio("Bet type", ["Match market", "Tournament outright"],
+                    horizontal=True, label_visibility="collapsed")
+
+    p_model, bet_label = None, ""
+    if kind == "Match market":
+        upcoming = [m for m in board if m["state"] == "pre"
+                    and m["home"] in CONFIG.teams and m["away"] in CONFIG.teams]
+        c1, c2 = st.columns([3, 2])
+        if upcoming:
+            opts = [f"{m['home']} vs {m['away']}  ·  {cdmx(m['kickoff']):%b %d %H:%M}"
+                    for m in upcoming]
+            pick_ix = c1.selectbox("Fixture", range(len(opts)),
+                                   format_func=lambda i: opts[i])
+            mh, ma = upcoming[pick_ix]["home"], upcoming[pick_ix]["away"]
+        else:
+            mh = c1.selectbox("Team A", CONFIG.teams, index=0, format_func=flag)
+            ma = c1.selectbox("Team B", CONFIG.teams, index=1, format_func=flag)
+        market_ix = c2.selectbox("Market", range(len(bet.FIXTURE_MARKETS)),
+                                 format_func=lambda i: bet.FIXTURE_MARKETS[i][1])
+        code, mlabel = bet.FIXTURE_MARKETS[market_ix]
+
+        line, score = 2.5, None
+        if code in ("O", "U"):
+            line = st.select_slider("Goal line", options=[0.5, 1.5, 2.5, 3.5, 4.5, 5.5],
+                                    value=2.5)
+        if code == "CS":
+            cc1, cc2 = st.columns(2)
+            score = (cc1.number_input(f"{mh} goals", 0, 10, 1),
+                     cc2.number_input(f"{ma} goals", 0, 10, 0))
+        if mh != ma:
+            out = mp.predict(mh, ma, not CONFIG.is_host(mh))
+            p_model = bet.market_prob(out, code, line=line, score=score)
+            extra = (f" {line}" if code in ("O", "U")
+                     else f" {score[0]}-{score[1]}" if code == "CS" else "")
+            who = {"1": mh, "2": ma, "X": "Draw", "1X": f"{mh}/draw",
+                   "X2": f"draw/{ma}", "12": f"{mh}/{ma}"}.get(code, mlabel)
+            bet_label = f"{mh} vs {ma}: {who if code in ('1','2','X','1X','X2','12') else mlabel}{extra}"
+    else:
+        c1, c2 = st.columns(2)
+        team = c1.selectbox("Team", table["team"].tolist() if table is not None
+                            else CONFIG.teams, format_func=flag)
+        omkt = c2.selectbox("Market", ["Champion", "Reach final", "Reach semi-final",
+                                       "Reach quarter-final", "Win group"])
+        if table is not None:
+            r = table.set_index("team").loc[team]
+            p_model = float({"Champion": r["champion"], "Reach final": r["final"],
+                             "Reach semi-final": r["semifinal"],
+                             "Reach quarter-final": r["quarterfinal"],
+                             "Win group": r["win_group"]}[omkt])
+            bet_label = f"{team}: {omkt}"
+
+    if p_model is not None and p_model > 0:
+        fair = 1 / p_model
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Model probability", f"{p_model*100:.1f}%")
+        c2.metric("Fair odds", f"{fair:.2f}")
+        offered = c3.number_input("Bookmaker decimal odds", min_value=1.01,
+                                  value=float(round(fair, 2)), step=0.05)
+        edge = p_model - 1 / offered
+        ev = p_model * offered - 1
+        kf = bet.kelly_fraction(p_model, offered)
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Edge vs implied", f"{edge*100:+.1f} pp")
+        c2.metric("EV per $100", f"${ev*100:+.1f}")
+        c3.metric("¼-Kelly stake", f"{kf/4*100:.1f}% of bankroll")
+
+        if st.button("➕ Add to parlay"):
+            st.session_state.setdefault("parlay", [])
+            st.session_state["parlay"].append({"label": bet_label, "p": p_model})
+            st.rerun()
+    elif p_model is not None:
+        st.info("The model gives this essentially zero probability.")
+
+    legs = st.session_state.get("parlay", [])
+    if legs:
+        st.divider()
+        st.subheader("🎫 Parlay slip")
+        p_combo = float(np.prod([leg["p"] for leg in legs]))
+        for i, leg in enumerate(legs, 1):
+            st.markdown(f"{i}. **{leg['label']}** — {leg['p']*100:.1f}%")
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Combined probability", f"{p_combo*100:.2f}%")
+        c2.metric("Fair parlay odds", f"{1/p_combo:.2f}" if p_combo > 0 else "∞")
+        offered_p = c3.number_input("Offered parlay odds", min_value=1.01,
+                                    value=float(round(1 / max(p_combo, 1e-6), 2)),
+                                    step=0.1, key="parlay_odds")
+        ev_p = p_combo * offered_p - 1
+        st.metric("Parlay EV per $100", f"${ev_p*100:+.1f}")
+        st.caption("Legs assumed independent — true across different matches; do not "
+                   "parlay two bets on the same game.")
+        if st.button("Clear slip"):
+            st.session_state["parlay"] = []
+            st.rerun()
 
 # ---------------------------------------------------------------- Trends
 with tab_history:

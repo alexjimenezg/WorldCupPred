@@ -50,6 +50,31 @@ def _minute(display_clock: str, state: str) -> int:
     return min(int(m.group(1)), 90) if m else 0
 
 
+def _parse_odds(comp: dict) -> dict | None:
+    """Bookmaker 3-way moneyline that rides along in the scoreboard (DraftKings)."""
+    from src.betting import american_to_decimal
+    arr = comp.get("odds") or []
+    o = next((x for x in arr if isinstance(x, dict)), None)
+    if o is None:
+        return None
+
+    def side(name: str) -> float | None:
+        node = (o.get("moneyline") or {}).get(name) or {}
+        for k in ("close", "open"):
+            d = american_to_decimal((node.get(k) or {}).get("odds"))
+            if d:
+                return d
+        return None
+
+    dh, da = side("home"), side("away")
+    dd = american_to_decimal((o.get("drawOdds") or {}).get("moneyLine"))
+    if not (dh and dd and da):
+        return None
+    return {"provider": (o.get("provider") or {}).get("name", "book"),
+            "dec_home": dh, "dec_draw": dd, "dec_away": da,
+            "over_under": o.get("overUnder")}
+
+
 def fetch_scoreboard(dates: str | None = None, *, timeout: int = 20) -> list[dict]:
     """All WC matches in the date range (default: whole tournament), parsed flat.
 
@@ -89,6 +114,7 @@ def fetch_scoreboard(dates: str | None = None, *, timeout: int = 20) -> list[dic
             "home": h["team"], "away": a["team"],
             "home_score": h["score"], "away_score": a["score"],
             "stats": stats,
+            "odds": _parse_odds(comp),
         })
     out.sort(key=lambda m: m["kickoff"])
     return out
