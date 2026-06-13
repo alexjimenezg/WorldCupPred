@@ -3,16 +3,20 @@
 Tabs:
   Live           ESPN live scoreboard joined to the model: in-play conditional W/D/L,
                  stats, upcoming + played boards (auto-refreshes every minute)
-  Title odds     champion / stage probabilities for all 48 teams (plotly + table)
+  Odds           champion / stage probabilities for all 48 teams (plotly + table)
   Groups         live standings from recorded results + advance probabilities
-  Bracket        most-likely Round-of-32 line-up + road-to-title funnel per team
-  History        champion odds over time (one snapshot per saved simulation)
-  Single match   any two teams (neutral toggle) -> ensemble W/D/L + scoreline heatmap
+  Bracket        full predicted wallchart R32 -> Final + road-to-title funnel
+  Trends         champion odds over time (one snapshot per saved simulation)
+  Versus         any two teams (neutral toggle) -> ensemble W/D/L + scoreline heatmap
   Models         engine info, weights, and a quick walk-forward backtest
-  Knowledge base browse the auto-generated Obsidian vault
+  Vault          browse the auto-generated Obsidian knowledge base
 
 Results sync (sidebar / on launch) pulls from ESPN + martj42 + football-data.org;
 manual entry still exists via `python -m src.update --match ...`.
+
+The UI is a single responsive design system: CSS grid cards that reflow from a
+phone's single column to a desktop's multi-column layout (no fixed-width columns),
+pill tabs that scroll horizontally on small screens, and kickoff times in CDMX.
 
 Run:  streamlit run app.py
 """
@@ -72,88 +76,181 @@ def cdmx(ts: pd.Timestamp) -> pd.Timestamp:
     return ts.tz_convert(TZ_CDMX)
 
 
-# ---------------------------------------------------------------- styling
+# ---------------------------------------------------------------- design system
 st.markdown(f"""
 <style>
-.block-container {{ padding-top: 1.2rem; }}
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap');
+
+:root {{
+  --bg:#0b1220; --card:#141d33; --card2:#1a2750; --line:#243153;
+  --mut:#93a4c8; --txt:#e8ecf6; --red:{RED}; --green:{GREEN}; --blue:{BLUE};
+  --r:16px;
+}}
+.stApp, .stApp p, .stApp span, .stApp div, .stApp label,
+.stApp h1, .stApp h2, .stApp h3, .stApp h4, .stApp button {{
+  font-family:'Outfit', -apple-system, 'Segoe UI', sans-serif;
+}}
+.block-container {{ padding: 1.0rem 1.4rem 4rem; max-width: 1500px; }}
+@media (max-width: 640px) {{
+  .block-container {{ padding: .55rem .55rem 4rem; }}
+}}
+header[data-testid="stHeader"] {{ background: transparent; }}
+#MainMenu, footer {{ visibility: hidden; }}
+
+/* ---- pill tabs (scroll horizontally on phones) ---- */
+.stTabs [data-baseweb="tab-list"] {{
+  gap:.35rem; flex-wrap:nowrap; overflow-x:auto; padding-bottom:.35rem;
+  scrollbar-width:none;
+}}
+.stTabs [data-baseweb="tab-list"]::-webkit-scrollbar {{ display:none; }}
+.stTabs [data-baseweb="tab"] {{
+  background:var(--card); border:1px solid var(--line); border-radius:999px;
+  padding:.3rem 1.0rem; color:var(--mut); font-weight:600; white-space:nowrap;
+  transition: all .15s;
+}}
+.stTabs [data-baseweb="tab"]:hover {{ color:#fff; border-color:var(--mut); }}
+.stTabs [aria-selected="true"] {{
+  background:linear-gradient(100deg, var(--red), #f43f5e);
+  color:#fff !important; border-color:transparent;
+}}
+.stTabs [data-baseweb="tab-highlight"], .stTabs [data-baseweb="tab-border"] {{
+  display:none;
+}}
+
+/* ---- hero ---- */
 .wc-hero {{
-  border-radius: 14px; padding: 1.4rem 1.8rem 1.2rem;
-  background: linear-gradient(135deg, #101a33 0%, #0d1426 60%, #131c30 100%);
-  border: 1px solid #243153; margin-bottom: .6rem;
+  border-radius:var(--r); padding:1.1rem 1.4rem 1rem; margin-bottom:.55rem;
+  background:
+    radial-gradient(1100px 320px at 8% -40%, rgba(225,29,72,.22), transparent),
+    radial-gradient(900px 320px at 55% -50%, rgba(16,185,129,.16), transparent),
+    radial-gradient(900px 320px at 100% -40%, rgba(59,130,246,.20), transparent),
+    linear-gradient(135deg, #101a33 0%, #0d1426 70%);
+  border:1px solid var(--line);
 }}
 .wc-stripe {{
-  height: 6px; border-radius: 3px; margin-bottom: .9rem;
-  background: linear-gradient(90deg, {RED} 0%, {RED} 33%, {GREEN} 33%, {GREEN} 66%, {BLUE} 66%, {BLUE} 100%);
+  height:5px; border-radius:3px; margin-bottom:.8rem;
+  background:linear-gradient(90deg, var(--red) 0 33%, var(--green) 33% 66%,
+                             var(--blue) 66% 100%);
 }}
-.wc-hero h1 {{ margin: 0; font-size: 2rem; letter-spacing: .04em; }}
-.wc-hero p  {{ margin: .25rem 0 0; color: #93a4c8; }}
+.wc-hero h1 {{ margin:0; font-size:1.7rem; font-weight:800; letter-spacing:.02em; }}
+.wc-hero p {{ margin:.3rem 0 0; color:var(--mut); font-size:.86rem; }}
+.chiprow {{ display:flex; gap:.4rem; flex-wrap:wrap; margin-top:.55rem; }}
+.chip {{
+  font-size:.7rem; font-weight:700; letter-spacing:.05em; color:var(--txt);
+  border:1px solid var(--line); border-radius:999px; padding:.14rem .6rem;
+}}
+.chip.r {{ border-color:var(--red); }} .chip.g {{ border-color:var(--green); }}
+.chip.b {{ border-color:var(--blue); }}
+@media (max-width:640px) {{
+  .wc-hero {{ padding:.8rem .9rem .75rem; }}
+  .wc-hero h1 {{ font-size:1.25rem; }}
+  .wc-hero p {{ font-size:.78rem; }}
+}}
+
+/* ---- responsive card grids ---- */
+.grid {{ display:grid; gap:.65rem; margin:.3rem 0 .8rem; }}
+.g-pod  {{ grid-template-columns:repeat(auto-fit, minmax(185px, 1fr)); }}
+.g-live {{ grid-template-columns:repeat(auto-fill, minmax(320px, 1fr)); }}
+.g-mini {{ grid-template-columns:repeat(auto-fill, minmax(255px, 1fr)); }}
+.g-grp  {{ grid-template-columns:repeat(auto-fill, minmax(295px, 1fr)); }}
+
 .wc-card {{
-  border-radius: 12px; padding: .9rem 1rem; height: 100%;
-  background: #141d33; border: 1px solid #243153;
+  border-radius:var(--r); padding:.85rem 1rem;
+  background:var(--card); border:1px solid var(--line);
+  transition:transform .15s, box-shadow .15s;
 }}
-.wc-card .t {{ font-size: 1.05rem; font-weight: 600; }}
-.wc-card .v {{ font-size: 1.7rem; font-weight: 700; margin-top: .15rem; }}
-.wc-card .s {{ color: #93a4c8; font-size: .8rem; }}
-.wc-tie {{
-  border-radius: 10px; padding: .45rem .7rem; margin-bottom: .45rem;
-  background: #141d33; border: 1px solid #243153; font-size: .92rem;
-}}
-.wc-tie .id {{ color: #93a4c8; font-size: .75rem; }}
+.wc-card:hover {{ transform:translateY(-2px); box-shadow:0 10px 26px rgba(0,0,0,.35); }}
+.wc-card .t {{ font-size:1rem; font-weight:700; }}
+.wc-card .v {{ font-size:1.65rem; font-weight:800; margin-top:.1rem; }}
+.wc-card .s {{ color:var(--mut); font-size:.76rem; }}
+
+/* ---- live cards ---- */
 .lv-card {{
-  border-radius: 12px; padding: .8rem 1rem; margin-bottom: .8rem;
-  background: #141d33; border: 1px solid #243153;
+  border-radius:var(--r); padding:.75rem .95rem;
+  background:var(--card); border:1px solid var(--line);
+  transition:transform .15s, box-shadow .15s;
 }}
-.lv-card.live {{ border-color: {RED}; }}
-.lv-head {{ display:flex; justify-content:space-between; color:#93a4c8;
-            font-size:.78rem; margin-bottom:.35rem; }}
-.lv-badge {{ color:#fff; background:{RED}; border-radius:6px; padding:.05rem .5rem;
-             font-weight:700; animation: lvpulse 1.6s infinite; }}
+.lv-card:hover {{ transform:translateY(-2px); box-shadow:0 10px 26px rgba(0,0,0,.35); }}
+.lv-card.live {{ border-color:var(--red);
+                 box-shadow:0 0 0 1px rgba(225,29,72,.35), 0 6px 18px rgba(225,29,72,.12); }}
+.lv-head {{ display:flex; justify-content:space-between; color:var(--mut);
+            font-size:.74rem; margin-bottom:.3rem; }}
+.lv-badge {{ color:#fff; background:var(--red); border-radius:6px;
+             padding:.05rem .5rem; font-weight:700; animation:lvpulse 1.6s infinite; }}
 @keyframes lvpulse {{ 50% {{ opacity:.55; }} }}
 .lv-score {{ display:flex; justify-content:space-between; align-items:center;
-             font-size:1.02rem; font-weight:600; margin-bottom:.45rem; }}
-.lv-score .sc {{ font-size:1.45rem; font-weight:800; padding:0 .6rem; }}
-.pstrip {{ display:flex; height: 22px; border-radius: 6px; overflow:hidden;
-           font-size:.72rem; font-weight:700; color:#fff; margin:.25rem 0 .15rem; }}
+             font-size:.98rem; font-weight:700; margin-bottom:.4rem; gap:.3rem; }}
+.lv-score .sc {{ font-size:1.4rem; font-weight:800; padding:0 .45rem;
+                 font-variant-numeric:tabular-nums; }}
+.pstrip {{ display:flex; height:21px; border-radius:7px; overflow:hidden;
+           font-size:.7rem; font-weight:700; color:#fff; margin:.25rem 0 .12rem; }}
 .pstrip div {{ display:flex; align-items:center; justify-content:center;
                white-space:nowrap; overflow:hidden; }}
-.pcap {{ color:#93a4c8; font-size:.74rem; margin-bottom:.4rem; }}
-.lvrow {{ display:flex; align-items:center; gap:.45rem; font-size:.78rem;
-          margin:.18rem 0; }}
-.lvrow .val {{ width:2.4rem; text-align:center; }}
-.lvrow .lab {{ width:6.8rem; text-align:center; color:#93a4c8; font-size:.72rem; }}
-.lvrow .bar {{ flex:1; height:7px; background:#243153; border-radius:4px;
+.pcap {{ color:var(--mut); font-size:.72rem; margin-bottom:.35rem; }}
+.lvrow {{ display:flex; align-items:center; gap:.45rem; font-size:.76rem;
+          margin:.16rem 0; }}
+.lvrow .val {{ width:2.3rem; text-align:center; }}
+.lvrow .lab {{ width:6.6rem; text-align:center; color:var(--mut); font-size:.7rem; }}
+.lvrow .bar {{ flex:1; height:6px; background:var(--line); border-radius:4px;
                position:relative; overflow:hidden; }}
 .lvrow .bar div {{ position:absolute; top:0; bottom:0; }}
-.lvrow .bar.h div {{ right:0; background:{GREEN}; }}
-.lvrow .bar.a div {{ left:0; background:{BLUE}; }}
+.lvrow .bar.h div {{ right:0; background:var(--green); }}
+.lvrow .bar.a div {{ left:0; background:var(--blue); }}
+
+/* ---- group cards ---- */
+.grp-card {{
+  background:var(--card); border:1px solid var(--line); border-radius:var(--r);
+  padding:.65rem .85rem; transition:transform .15s, box-shadow .15s;
+}}
+.grp-card:hover {{ transform:translateY(-2px); box-shadow:0 10px 26px rgba(0,0,0,.35); }}
+.grp-card .gh {{ font-weight:800; letter-spacing:.05em; margin-bottom:.35rem;
+                 display:flex; justify-content:space-between; align-items:baseline; }}
+.grp-card .gh small {{ color:var(--mut); font-weight:400; font-size:.7rem; }}
+.grow {{ display:grid; grid-template-columns:minmax(0,1fr) 1.5rem 2rem 56px 2.5rem;
+         gap:.4rem; align-items:center; font-size:.82rem; padding:.2rem 0;
+         border-top:1px solid rgba(36,49,83,.55); }}
+.grow.hd {{ border-top:none; color:var(--mut); font-size:.66rem;
+            letter-spacing:.04em; }}
+.grow .tm {{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }}
+.grow .num {{ text-align:center; font-variant-numeric:tabular-nums; }}
+.grow .pc {{ text-align:right; color:var(--mut); font-size:.74rem; }}
+.qdot {{ display:inline-block; width:7px; height:7px; border-radius:50%;
+         margin-right:.3rem; vertical-align:1px; }}
+.adv {{ height:6px; background:var(--line); border-radius:3px; overflow:hidden; }}
+.adv div {{ height:100%; background:linear-gradient(90deg, var(--green), #34d399); }}
+
+/* ---- bracket wallchart ---- */
 .bk-wrap {{ overflow-x:auto; padding-bottom:.5rem; }}
 .bk {{ display:flex; gap:.45rem; min-width:1240px; align-items:stretch; }}
 .bk-col {{ display:flex; flex-direction:column; justify-content:space-around;
            flex:1; min-width:124px; }}
-.bk-rnd {{ text-align:center; color:#93a4c8; font-size:.72rem; font-weight:700;
-           letter-spacing:.06em; margin-bottom:.2rem; }}
-.bk-tie {{ background:#141d33; border:1px solid #243153; border-radius:8px;
-           padding:.25rem .45rem; margin:.16rem 0; font-size:.76rem; }}
+.bk-rnd {{ text-align:center; color:var(--mut); font-size:.7rem; font-weight:700;
+           letter-spacing:.08em; margin-bottom:.2rem; }}
+.bk-tie {{ background:var(--card); border:1px solid var(--line); border-radius:9px;
+           padding:.25rem .45rem; margin:.16rem 0; font-size:.75rem; }}
 .bk-tie .tm {{ display:flex; justify-content:space-between; gap:.3rem;
                white-space:nowrap; }}
 .bk-tie .tm.w {{ font-weight:700; }}
 .bk-tie .tm.l {{ color:#64748b; }}
-.bk-tie .pp {{ color:#93a4c8; font-weight:400; }}
+.bk-tie .pp {{ color:var(--mut); font-weight:400; }}
 .bk-id {{ color:#5b6a8c; font-size:.6rem; }}
-.bk-champ {{ text-align:center; background:linear-gradient(135deg,#1d2a4d,#141d33);
-             border:1px solid {GREEN}; border-radius:10px; padding:.5rem .4rem;
-             margin-bottom:.5rem; }}
-.bk-champ .c {{ font-size:1.0rem; font-weight:800; }}
-.bk-champ .s {{ color:#93a4c8; font-size:.7rem; }}
-div[data-testid="stMetricValue"] {{ font-size: 1.55rem; }}
+.bk-champ {{ text-align:center; background:linear-gradient(135deg,#1d2a4d,var(--card));
+             border:1px solid var(--green); border-radius:10px;
+             padding:.5rem .4rem; margin-bottom:.5rem; }}
+.bk-champ .c {{ font-size:1rem; font-weight:800; }}
+.bk-champ .s {{ color:var(--mut); font-size:.7rem; }}
+
+/* ---- misc ---- */
+.stButton > button {{ border-radius:12px; font-weight:700; }}
+div[data-testid="stMetricValue"] {{ font-size:1.5rem; }}
 </style>
 """, unsafe_allow_html=True)
 
 
 def _plot(fig: go.Figure, h: int = 420) -> go.Figure:
     fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-                      font_color="#e8ecf6", height=h,
-                      margin=dict(l=10, r=10, t=36, b=10))
+                      font=dict(color="#e8ecf6", family="Outfit, sans-serif"),
+                      height=h, margin=dict(l=10, r=10, t=36, b=10))
     fig.update_xaxes(gridcolor="#243153")
     fig.update_yaxes(gridcolor="#243153")
     return fig
@@ -177,19 +274,15 @@ def _store():
     return ResultsStore()
 
 
-def _refresh_after_update():
-    load_predictor.clear()
-    st.rerun()
-
-
 def run_sync(n_sims: int = 20000) -> None:
     """Pull results to-date; refit + re-simulate only if something new arrived."""
     from src import update as upd
-    with st.spinner("Syncing results to-date (martj42 / football-data.org)…"):
-        info, table = upd.sync_and_recompute(n_sims=n_sims, verbose=False)
-    if table is not None:
+    with st.spinner("Syncing results to-date (ESPN / martj42 / football-data.org)…"):
+        info, table_new = upd.sync_and_recompute(n_sims=n_sims, verbose=False)
+    if table_new is not None:
         st.toast(f"✅ {info['n_changed']} new result(s) imported — odds refreshed.")
-        _refresh_after_update()
+        load_predictor.clear()
+        st.rerun()
     else:
         srcs = ", ".join(info["sources"]) or "no source reachable"
         st.toast(f"Already up to date ({srcs}) — {info['total']} results in store.")
@@ -386,17 +479,18 @@ def _countdown(m: dict) -> None:
     ms = int(m["kickoff"].timestamp() * 1000)
     when = f"{cdmx(m['kickoff']):%a %b %d · %H:%M} CDMX"
     components.html(f"""
+    <style>@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;800&display=swap');</style>
     <div style="display:flex;gap:1.1rem;align-items:center;flex-wrap:wrap;
-                font-family:'Source Sans Pro',-apple-system,sans-serif;color:#e8ecf6;
-                background:#141d33;border:1px solid #243153;border-radius:12px;
+                font-family:'Outfit',-apple-system,sans-serif;color:#e8ecf6;
+                background:#141d33;border:1px solid #243153;border-radius:16px;
                 padding:.7rem 1.1rem;">
-      <span style="font-size:.74rem;color:#93a4c8;letter-spacing:.08em;">NEXT MATCH</span>
-      <span style="font-weight:700;font-size:1.02rem;">
+      <span style="font-size:.72rem;color:#93a4c8;letter-spacing:.1em;">NEXT MATCH</span>
+      <span style="font-weight:700;font-size:1rem;">
         {FLAGS.get(m['home'], '')} {m['home']} vs {m['away']} {FLAGS.get(m['away'], '')}
       </span>
-      <span id="cd" style="font-size:1.5rem;font-weight:800;color:{GREEN};
+      <span id="cd" style="font-size:1.45rem;font-weight:800;color:{GREEN};
                            font-variant-numeric:tabular-nums;">…</span>
-      <span style="font-size:.78rem;color:#93a4c8;">{when}</span>
+      <span style="font-size:.76rem;color:#93a4c8;">{when}</span>
     </div>
     <script>
       const t = {ms}, el = document.getElementById("cd");
@@ -409,7 +503,7 @@ def _countdown(m: dict) -> None:
           String(m_).padStart(2, "0") + "m " + String(s).padStart(2, "0") + "s";
       }}
       tick(); setInterval(tick, 1000);
-    </script>""", height=66)
+    </script>""", height=72)
 
 
 @st.fragment(run_every=60)
@@ -429,14 +523,14 @@ def live_board():
 
     if live:
         st.markdown(f"#### 🔴 In play now ({len(live)})")
-        cols = st.columns(min(2, len(live)))
-        for i, m in enumerate(live):
-            cols[i % len(cols)].markdown(_match_card(m, mp), unsafe_allow_html=True)
+        st.markdown('<div class="grid g-live">'
+                    + "".join(_match_card(m, mp) for m in live)
+                    + "</div>", unsafe_allow_html=True)
         st.caption("Win-probability strip is the model conditional on the current "
                    "score and minute (green = home, grey = draw, blue = away). "
                    "Auto-refreshes every minute.")
     else:
-        st.info("No match in play right now — auto-refreshing every minute.")
+        st.info("No match in play right now — auto-refreshing every minute. ⚽")
 
     # nudge when a final result hasn't been folded into the odds yet
     store_keys = {(frozenset((r.home, r.away))) for r in _store().results}
@@ -449,26 +543,29 @@ def live_board():
 
     if pre:
         st.markdown("#### ⏭️ Next up")
-        nxt = pre[:6]
-        cols = st.columns(3)
-        for i, m in enumerate(nxt):
-            cols[i % 3].markdown(_match_card(m, mp), unsafe_allow_html=True)
+        st.markdown('<div class="grid g-mini">'
+                    + "".join(_match_card(m, mp) for m in pre[:6])
+                    + "</div>", unsafe_allow_html=True)
 
     if done:
         st.markdown(f"#### ✅ Played ({len(done)})")
-        for i, m in enumerate(reversed(done)):
-            if i % 3 == 0:
-                cols = st.columns(3)
-            cols[i % 3].markdown(_match_card(m, mp), unsafe_allow_html=True)
+        st.markdown('<div class="grid g-mini">'
+                    + "".join(_match_card(m, mp) for m in reversed(done))
+                    + "</div>", unsafe_allow_html=True)
 
 
 # ---------------------------------------------------------------- header
 st.markdown("""
 <div class="wc-hero">
   <div class="wc-stripe"></div>
-  <h1>🏆 WorldCupPred — FIFA World Cup 26™</h1>
-  <p>United States · Canada · Mexico — 48 teams · 104 matches · Elo + Dixon-Coles +
-  ML/DL ensemble → Monte-Carlo simulation</p>
+  <h1>⚽ WorldCupPred</h1>
+  <p>Elo + Dixon-Coles + ML ensemble → thousands of Monte-Carlo futures,
+  refreshed with every final whistle.</p>
+  <div class="chiprow">
+    <span class="chip r">FIFA WORLD CUP 26™</span>
+    <span class="chip g">🇺🇸 🇨🇦 🇲🇽 UNITED 26</span>
+    <span class="chip b">48 TEAMS · 104 MATCHES</span>
+  </div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -481,7 +578,7 @@ if not _MODELS_READY:
 with st.sidebar:
     st.markdown("### ⚙️ Live updates")
     auto = st.toggle("Auto-sync on launch", value=True,
-                     help="Once per session: pull played results from martj42 / "
+                     help="Once per session: pull played results from ESPN / martj42 / "
                           "football-data.org, refit and re-simulate if anything is new.")
     sync_sims = st.select_slider("Simulations on refresh",
                                  options=[5000, 10000, 20000, 50000], value=20000)
@@ -521,8 +618,8 @@ if auto and not st.session_state.get("_auto_synced"):
 # ---------------------------------------------------------------- tabs
 (tab_live, tab_odds, tab_groups, tab_bracket, tab_history,
  tab_match, tab_models, tab_kb) = st.tabs(
-    ["🔴 Live", "🏆 Title odds", "📊 Groups", "🛣️ Bracket", "📈 History",
-     "⚔️ Single match", "🧠 Models", "📚 Knowledge base"])
+    ["🔴 Live", "🏆 Odds", "📊 Groups", "🛣️ Bracket", "📈 Trends",
+     "⚔️ Versus", "🧠 Models", "📚 Vault"])
 
 table = load_table()
 
@@ -530,27 +627,25 @@ table = load_table()
 with tab_live:
     live_board()
 
-# ---------------------------------------------------------------- Title odds
+# ---------------------------------------------------------------- Odds
 with tab_odds:
     if table is None:
         st.info("No simulation yet. Run `python scripts/run_simulation.py`.")
     else:
         podium = table.head(3)
         medals = ["🥇", "🥈", "🥉"]
-        cols = st.columns(4)
-        for i, (col, (_, r)) in enumerate(zip(cols[:3], podium.iterrows())):
-            col.markdown(
-                f"""<div class="wc-card"><div class="t">{medals[i]} {flag(r['team'])}</div>
-                <div class="v">{r['champion']*100:.1f}%</div>
-                <div class="s">champion · {r['final']*100:.0f}% final · group {r['group']}</div>
-                </div>""", unsafe_allow_html=True)
-        cols[3].markdown(
-            f"""<div class="wc-card"><div class="t">🎲 Tournament state</div>
-            <div class="v">{len(_store())}</div>
-            <div class="s">results recorded · 48 teams · 12 groups</div></div>""",
-            unsafe_allow_html=True)
+        cards = ""
+        for i, (_, r) in enumerate(podium.iterrows()):
+            cards += (f'<div class="wc-card"><div class="t">{medals[i]} '
+                      f'{flag(r["team"])}</div>'
+                      f'<div class="v">{r["champion"]*100:.1f}%</div>'
+                      f'<div class="s">champion · {r["final"]*100:.0f}% final · '
+                      f'group {r["group"]}</div></div>')
+        cards += (f'<div class="wc-card"><div class="t">🎲 Tournament state</div>'
+                  f'<div class="v">{len(_store())}</div>'
+                  f'<div class="s">results recorded · 48 teams · 12 groups</div></div>')
+        st.markdown(f'<div class="grid g-pod">{cards}</div>', unsafe_allow_html=True)
 
-        st.markdown("")
         c1, c2 = st.columns([3, 2])
         with c1:
             st.subheader("Champion probability — top 20")
@@ -559,23 +654,24 @@ with tab_odds:
                 x=top["champion"] * 100,
                 y=[flag(t) for t in top["team"]],
                 orientation="h",
-                marker=dict(color=top["champion"] * 100, colorscale=[[0, "#1d4ed8"], [.5, GREEN], [1, RED]]),
+                marker=dict(color=top["champion"] * 100,
+                            colorscale=[[0, "#1d4ed8"], [.5, GREEN], [1, RED]]),
                 text=[f"{v*100:.1f}%" for v in top["champion"]],
                 textposition="outside",
             ))
             fig.update_layout(xaxis_title="P(champion) %", showlegend=False)
-            st.plotly_chart(_plot(fig, 560), width='stretch')
+            st.plotly_chart(_plot(fig, 540), width='stretch')
         with c2:
-            st.subheader("Champion share by confederation")
+            st.subheader("By confederation")
             conf = table.assign(conf=table["team"].map(CONFIG.confederation_of))
             agg = conf.groupby("conf", as_index=False)["champion"].sum()
             fig = px.pie(agg, names="conf", values="champion", hole=.45,
                          color_discrete_sequence=[BLUE, GREEN, RED, "#f59e0b",
                                                   "#8b5cf6", "#14b8a6"])
             fig.update_traces(textinfo="label+percent")
-            st.plotly_chart(_plot(fig, 320), width='stretch')
+            st.plotly_chart(_plot(fig, 300), width='stretch')
 
-            st.subheader("Stage odds — compare teams")
+            st.subheader("Stage odds — compare")
             picks = st.multiselect("Teams", table["team"].tolist(),
                                    default=table["team"].head(5).tolist(),
                                    label_visibility="collapsed")
@@ -608,37 +704,43 @@ with tab_odds:
 
 # ---------------------------------------------------------------- Groups
 with tab_groups:
-    st.subheader("Group stage — live standings & advance probabilities")
-    st.caption("Standings from recorded results; `advance` = P(reach Round of 32) and "
-               "`win` = P(win group) from the latest simulation.")
+    st.subheader("Group stage — standings & advance odds")
+    st.caption("Standings from played results · bar = P(reach Round of 32) from the "
+               "latest simulation · "
+               "<span class='qdot' style='background:#10b981'></span> direct "
+               "<span class='qdot' style='background:#f59e0b'></span> best-third race",
+               unsafe_allow_html=True)
     store = _store()
     tables = group_standings(store)
     odds_ix = table.set_index("team") if table is not None else None
-    for row_start in range(0, 12, 3):
-        cols = st.columns(3)
-        for col, g in zip(cols, list(CONFIG.groups)[row_start:row_start + 3]):
-            with col:
-                st.markdown(f"##### Group {g}")
-                df = tables[g].copy()
-                if odds_ix is not None:
-                    df["win"] = df["team"].map(odds_ix["win_group"]) * 100
-                    df["advance"] = df["team"].map(odds_ix["round32"]) * 100
-                df["team"] = df["team"].map(flag)
-                show_cols = ["team", "P", "W", "D", "L", "GD", "Pts"]
-                cfg = {}
-                if odds_ix is not None:
-                    show_cols += ["win", "advance"]
-                    cfg = {"advance": st.column_config.ProgressColumn(
-                               "advance", format="%.0f%%", min_value=0, max_value=100),
-                           "win": st.column_config.NumberColumn(format="%.0f%%")}
-                st.dataframe(df[show_cols], hide_index=True, width='stretch',
-                             column_config=cfg)
-    played = [r for r in store.results if r.stage == "group"]
-    if played:
+
+    cards = ""
+    for g in CONFIG.groups:
+        df = tables[g]
+        played = int(df["P"].sum()) // 2
+        rows = ('<div class="grow hd"><span>TEAM</span><span class="num">PTS</span>'
+                '<span class="num">GD</span><span>ADVANCE</span>'
+                '<span class="pc">%</span></div>')
+        for pos, (_, r) in enumerate(df.iterrows()):
+            adv = float(odds_ix.loc[r["team"], "round32"]) * 100 if odds_ix is not None else 0
+            dot = ("#10b981" if pos < 2 else "#f59e0b" if pos == 2 else "transparent")
+            rows += (f'<div class="grow">'
+                     f'<span class="tm"><span class="qdot" style="background:{dot}">'
+                     f'</span>{flag(r["team"])}</span>'
+                     f'<span class="num">{r["Pts"]}</span>'
+                     f'<span class="num">{r["GD"]:+d}</span>'
+                     f'<span class="adv"><div style="width:{adv:.0f}%"></div></span>'
+                     f'<span class="pc">{adv:.0f}</span></div>')
+        cards += (f'<div class="grp-card"><div class="gh">GROUP {g}'
+                  f'<small>{played}/6 played</small></div>{rows}</div>')
+    st.markdown(f'<div class="grid g-grp">{cards}</div>', unsafe_allow_html=True)
+
+    played_res = [r for r in store.results if r.stage == "group"]
+    if played_res:
         st.markdown("##### Played group matches")
         st.markdown("  \n".join(
             f"`{r.date}` **{flag(r.home)} {r.home_score} – {r.away_score} {flag(r.away)}**"
-            for r in played))
+            for r in played_res))
 
 # ---------------------------------------------------------------- Bracket
 with tab_bracket:
@@ -650,7 +752,7 @@ with tab_bracket:
                    "third-place slot allocation, then the ensemble's favorite advances at "
                    "every node (percentages = win the tie if it happens, draws resolved "
                    "by the ET/penalty model). The title odds integrate over *all* paths — "
-                   "this chart shows the single most likely one.")
+                   "this chart shows the single most likely one. Swipe sideways on a phone.")
         games = predicted_bracket(table)
         champ = games[104]["winner"]
         champ_prob = float(table.set_index("team").loc[champ, "champion"])
@@ -670,10 +772,10 @@ with tab_bracket:
         ))
         st.plotly_chart(_plot(fig, 420), width='stretch')
 
-# ---------------------------------------------------------------- History
+# ---------------------------------------------------------------- Trends
 with tab_history:
     st.subheader("Champion odds over time")
-    st.caption("One snapshot per saved simulation (manual entry, sync, or CLI run).")
+    st.caption("One snapshot per saved simulation (sync, manual entry, or CLI run).")
     if not _HISTORY_PATH.exists():
         st.info("No history yet — it starts accumulating with the next simulation run.")
     else:
@@ -693,7 +795,7 @@ with tab_history:
             st.caption("Only one snapshot so far — the lines appear once more "
                        "simulations are recorded.")
 
-# ---------------------------------------------------------------- Single match
+# ---------------------------------------------------------------- Versus
 with tab_match:
     st.subheader("Head-to-head predictor")
     if _HAS_DL:
@@ -791,7 +893,7 @@ with tab_models:
     else:
         st.caption("Set `ODDS_API_KEY` in .env to compare against bookmaker odds.")
 
-# ----------------------------------------------------------- Knowledge base
+# ---------------------------------------------------------------- Vault
 with tab_kb:
     st.subheader("Obsidian knowledge base")
     st.caption(f"Auto-generated under `{CONFIG.vault_dir}`. Open that folder as an Obsidian "
