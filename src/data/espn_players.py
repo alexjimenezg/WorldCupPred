@@ -61,7 +61,9 @@ def fetch_match_players(event_id: str, *, finished: bool, timeout: int = 20
     """Per-player rows for one match. Finished matches are cached to disk forever."""
     cache = _cache_path(event_id)
     if finished and cache.exists():
-        return json.loads(cache.read_text(encoding="utf-8"))
+        rows = json.loads(cache.read_text(encoding="utf-8"))
+        if rows and "jersey" in rows[0]:  # schema guard: refetch older caches
+            return rows
 
     r = requests.get(_SUMMARY, params={"event": event_id}, timeout=timeout)
     r.raise_for_status()
@@ -128,6 +130,8 @@ def aggregate(df: pd.DataFrame) -> pd.DataFrame:
         return df
     # clean sheet = a (goalkeeper) appearance with zero conceded
     df = df.copy()
+    if "jersey" not in df.columns:  # tolerate rows from an older cache schema
+        df["jersey"] = ""
     df["clean_sheet"] = ((df["apps"] > 0) & (df["conceded"] == 0)
                          & (df["role"] == "GK")).astype(int)
     grp = df.groupby(["player", "player_id", "team"], as_index=False)
