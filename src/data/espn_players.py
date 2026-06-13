@@ -73,9 +73,14 @@ def fetch_match_players(event_id: str, *, finished: bool, timeout: int = 20
             ath = p.get("athlete", {})
             pos = p.get("position", {}).get("displayName", "")
             stats = {s.get("name"): s.get("value", 0) for s in p.get("stats", [])}
+            jerseys = ath.get("jerseyImages") or []
+            jersey = next((j.get("href") for j in jerseys
+                           if "dark" in (j.get("rel") or [])),
+                          jerseys[0].get("href") if jerseys else "")
             row = {"event_id": event_id, "team": team,
                    "player": ath.get("displayName", ""),
                    "player_id": str(ath.get("id", "")),
+                   "jersey": jersey,
                    "position": pos, "role": _role(pos),
                    "starter": bool(p.get("starter"))}
             for espn_name, col in _STAT_KEYS.items():
@@ -133,6 +138,11 @@ def aggregate(df: pd.DataFrame) -> pd.DataFrame:
             .agg(lambda s: s.mode().iat[0] if len(s.mode()) else "")
             .rename("role"))
     agg = agg.merge(role, on="player", how="left").fillna({"role": ""})
+
+    # most recent jersey image per player (kit + number; ESPN has no headshots)
+    jersey = (df[df["jersey"] != ""].groupby("player")["jersey"].last()
+              .rename("jersey"))
+    agg = agg.merge(jersey, on="player", how="left").fillna({"jersey": ""})
 
     agg["conv"] = np.where(agg["shots"] > 0, agg["goals"] / agg["shots"], 0.0)
     agg["save_pct"] = np.where(agg["shots_faced"] > 0,

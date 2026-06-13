@@ -259,6 +259,48 @@ header[data-testid="stHeader"] {{ background: transparent; }}
 .bk-champ .c {{ font-size:1rem; font-weight:800; }}
 .bk-champ .s {{ color:var(--mut); font-size:.7rem; }}
 
+/* ---- dream-team pitch ---- */
+.pitch {{
+  position:relative; border-radius:18px; padding:1.2rem .5rem;
+  background:
+    repeating-linear-gradient(0deg, #0f5132 0 46px, #0c4329 46px 92px);
+  border:2px solid rgba(255,255,255,.22);
+  box-shadow:inset 0 0 0 7px rgba(255,255,255,.05);
+  display:flex; flex-direction:column; gap:.5rem; overflow:hidden;
+}}
+.pitch::before {{ content:''; position:absolute; left:50%; top:50%;
+  width:128px; height:128px; transform:translate(-50%,-50%);
+  border:2px solid rgba(255,255,255,.22); border-radius:50%; }}
+.pitch::after {{ content:''; position:absolute; left:8px; right:8px; top:50%;
+  height:2px; background:rgba(255,255,255,.22); }}
+.pbox {{ position:absolute; left:50%; transform:translateX(-50%); width:48%;
+  height:62px; border:2px solid rgba(255,255,255,.2); }}
+.pbox.top {{ top:-2px; border-top:none; }}
+.pbox.bot {{ bottom:-2px; border-bottom:none; }}
+.prow {{ position:relative; z-index:2; display:flex; justify-content:space-around;
+  gap:.3rem; }}
+.ptok {{ display:flex; flex-direction:column; align-items:center; width:88px;
+  text-align:center; }}
+.ptok img {{ width:52px; height:52px; object-fit:contain;
+  filter:drop-shadow(0 3px 5px rgba(0,0,0,.55)); }}
+.ptok .mono {{ width:48px; height:48px; border-radius:50%;
+  background:linear-gradient(135deg,#1f2d52,#0d1426);
+  border:2px solid rgba(255,255,255,.3); display:flex; align-items:center;
+  justify-content:center; font-weight:800; font-size:1rem; }}
+.ptok .nm {{ font-weight:700; font-size:.74rem; margin-top:.15rem; color:#fff;
+  white-space:nowrap; max-width:90px; overflow:hidden; text-overflow:ellipsis;
+  text-shadow:0 1px 3px rgba(0,0,0,.7); }}
+.ptok .sb {{ font-size:.64rem; color:#dbe4f5; text-shadow:0 1px 2px rgba(0,0,0,.7); }}
+.ptok .rt {{ background:var(--green); color:#04231a; font-weight:800;
+  font-size:.64rem; border-radius:6px; padding:.02rem .34rem; margin-top:.12rem; }}
+@media (max-width:640px) {{
+  .ptok {{ width:70px; }}
+  .ptok img {{ width:42px; height:42px; }}
+  .ptok .mono {{ width:40px; height:40px; font-size:.85rem; }}
+  .ptok .nm {{ font-size:.66rem; max-width:72px; }}
+  .pitch::before {{ width:92px; height:92px; }}
+}}
+
 /* ---- misc ---- */
 .stButton > button {{ border-radius:12px; font-weight:700; }}
 div[data-testid="stMetricValue"] {{ font-size:1.5rem; }}
@@ -1002,6 +1044,31 @@ def _leader_chart(df: pd.DataFrame, value_col: str, title: str, color: str,
     st.plotly_chart(_plot(fig, 30 + 32 * len(sub)), width='stretch', key=key)
 
 
+def _pitch(xi: dict) -> str:
+    """Render the 4-3-3 Best XI on a CSS soccer field (jersey image per player)."""
+    def token(r: pd.Series, gk: bool) -> str:
+        if r["jersey"]:
+            img = f'<img src="{r["jersey"]}" alt="">'
+        else:
+            initials = "".join(w[0] for w in str(r["player"]).split()[:2]).upper()
+            img = f'<div class="mono">{initials}</div>'
+        stat = (f'{int(r["saves"])} saves · {int(r["clean_sheet"])} CS' if gk
+                else f'{int(r["goals"])}G · {int(r["assists"])}A')
+        name = str(r["player"]).split()[-1]
+        return (f'<div class="ptok">{img}'
+                f'<div class="nm">{FLAGS.get(r["team"], "")} {name}</div>'
+                f'<div class="sb">{stat}</div>'
+                f'<div class="rt">★ {r["rating"]:.1f}</div></div>')
+
+    def row(role: str, gk: bool = False) -> str:
+        toks = "".join(token(r, gk) for _, r in xi[role].iterrows())
+        return f'<div class="prow">{toks}</div>'
+
+    return (f'<div class="pitch"><div class="pbox top"></div>'
+            f'<div class="pbox bot"></div>'
+            f'{row("FWD")}{row("MID")}{row("DEF")}{row("GK", gk=True)}</div>')
+
+
 with tab_players:
     st.subheader("Top players & dream team")
     try:
@@ -1040,30 +1107,16 @@ with tab_players:
 
         if sub == "⭐ Dream team":
             st.caption(f"Best XI (4-3-3) by performance rating — {scope.lower()}. "
-                       "Rating is our own transparent score "
-                       "(goals ×4, assists ×3, on-target ×0.5, saves ×0.5, "
-                       "clean sheet ×2, minus cards & own goals), not an official "
-                       "metric. Picked from players' starting positions.")
+                       "Jerseys are ESPN's rendered kits (no headshots in the free "
+                       "feed). Rating is our own transparent score (goals ×4, "
+                       "assists ×3, on-target ×0.5, saves ×0.5, clean sheet ×2, "
+                       "minus cards & own goals); players placed by starting position.")
             xi = ep.best_xi(agg)
-            role_label = {"GK": "🥅 Goalkeeper", "DEF": "🛡️ Defenders",
-                          "MID": "🎯 Midfielders", "FWD": "⚡ Forwards"}
-            for role in ["FWD", "MID", "DEF", "GK"]:
-                line = xi[role]
-                if line.empty:
-                    continue
-                st.markdown(f"**{role_label[role]}**")
-                cards = ""
-                for _, r in line.iterrows():
-                    extra = (f"{int(r['saves'])} saves · {int(r['clean_sheet'])} CS"
-                             if role == "GK"
-                             else f"{int(r['goals'])} G · {int(r['assists'])} A")
-                    cards += (f'<div class="wc-card"><div class="t">{flag(r["team"])}'
-                              f'</div><div class="v" style="font-size:1.05rem">'
-                              f'{r["player"]}</div>'
-                              f'<div class="s">{extra} · rating {r["rating"]:.1f}</div>'
-                              f'</div>')
-                st.markdown(f'<div class="grid g-mini">{cards}</div>',
-                            unsafe_allow_html=True)
+            filled = sum(len(xi[r]) for r in xi)
+            if filled < 11:
+                st.info(f"Only {filled}/11 slots filled so far — the pitch completes "
+                        "as more matches (and positions) are played.")
+            st.markdown(_pitch(xi), unsafe_allow_html=True)
         elif sub == "⚽ Scorers":
             _leader_chart(agg, "goals", "Goals", GREEN, key="lc-g")
         elif sub == "🅰️ Assists":
