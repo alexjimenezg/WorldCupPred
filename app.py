@@ -238,6 +238,7 @@ header[data-testid="stHeader"] {{ background: transparent; }}
 .glive .dot {{ width:8px; height:8px; border-radius:50%; background:var(--red);
                animation:lvpulse 1.6s infinite; flex:none; }}
 .glive .min {{ color:var(--mut); font-weight:400; }}
+.lvstar {{ color:var(--red); margin-left:.25rem; animation:lvpulse 1.6s infinite; }}
 
 /* ---- bracket wallchart ---- */
 .bk-wrap {{ overflow-x:auto; padding-bottom:.5rem; }}
@@ -368,23 +369,41 @@ def run_sync(n_sims: int = 20000) -> None:
         st.toast(f"Already up to date ({srcs}) — {info['total']} results in store.")
 
 
-def group_standings(store) -> dict[str, pd.DataFrame]:
-    """Live group tables from the recorded results (official primary tiebreakers)."""
-    rows = {t: {"team": t, "P": 0, "W": 0, "D": 0, "L": 0, "GF": 0, "GA": 0, "Pts": 0}
-            for t in CONFIG.teams}
-    for r in store.results:
-        if r.stage != "group":
-            continue
-        h, a = rows[r.home], rows[r.away]
+def group_standings(store, live_matches: list[dict] | None = None
+                    ) -> dict[str, pd.DataFrame]:
+    """Group tables from recorded results, with any in-play group match folded in
+    provisionally at its current score (official primary tiebreakers).
+
+    `live_matches`: in-play board entries (home/away/home_score/away_score). Teams
+    in a live match get a `live` flag so the standings can show them as provisional.
+    """
+    rows = {t: {"team": t, "P": 0, "W": 0, "D": 0, "L": 0, "GF": 0, "GA": 0,
+                "Pts": 0, "live": False} for t in CONFIG.teams}
+
+    def apply(home: str, away: str, hs: int, as_: int, live: bool = False) -> None:
+        if home not in rows or away not in rows:
+            return
+        h, a = rows[home], rows[away]
         h["P"] += 1; a["P"] += 1
-        h["GF"] += r.home_score; h["GA"] += r.away_score
-        a["GF"] += r.away_score; a["GA"] += r.home_score
-        if r.home_score > r.away_score:
+        h["GF"] += hs; h["GA"] += as_
+        a["GF"] += as_; a["GA"] += hs
+        if hs > as_:
             h["W"] += 1; a["L"] += 1; h["Pts"] += 3
-        elif r.home_score < r.away_score:
+        elif hs < as_:
             a["W"] += 1; h["L"] += 1; a["Pts"] += 3
         else:
             h["D"] += 1; a["D"] += 1; h["Pts"] += 1; a["Pts"] += 1
+        if live:
+            h["live"] = a["live"] = True
+
+    for r in store.results:
+        if r.stage == "group":
+            apply(r.home, r.away, r.home_score, r.away_score)
+    for m in live_matches or []:
+        if (m["home"] in CONFIG.teams and m["away"] in CONFIG.teams
+                and CONFIG.group_of(m["home"]) == CONFIG.group_of(m["away"])):
+            apply(m["home"], m["away"], m["home_score"], m["away_score"], live=True)
+
     out = {}
     for g, teams in CONFIG.groups.items():
         df = pd.DataFrame([rows[t] for t in teams])
@@ -435,6 +454,57 @@ def predicted_bracket(table: pd.DataFrame) -> dict[int, dict]:
     f_id, s1, s2 = T.FINAL
     play(f_id, winners[s1], winners[s2])
     return games
+
+
+@st.cache_data(ttl=600, show_spinner=False)
+def predicted_bracket_cached(_sig: str) -> dict[int, dict]:
+    """Cached predicted bracket (busts when the odds table / results change)."""
+    t = load_table()
+    return predicted_bracket(t) if t is not None else {}
+
+
+def _bracket_maps():
+    """tie_id -> round name, and feeder_tie -> (next_tie, sibling_feeder)."""
+    from src.simulation import tournament_2026 as T
+    rnd = {}
+    for t in range(73, 89):
+        rnd[t] = "Round of 32"
+    for t in range(89, 97):
+        rnd[t] = "Round of 16"
+    for t in (97, 98, 99, 100):
+        rnd[t] = "Quarter-final"
+    for t in (101, 102):
+        rnd[t] = "Semi-final"
+    rnd[104] = "Final"
+    feeds = {}
+    for nxt, a, b in (*T.BRACKET_R16, *T.BRACKET_QF, *T.BRACKET_SF, T.FINAL):
+        feeds[a] = (nxt, b)
+        feeds[b] = (nxt, a)
+    return rnd, feeds
+
+
+def knockout_context(home: str, away: str, sig: str) -> dict | None:
+    """For a knockout match, the projected next-round opponents of the winner.
+
+    Identifies the tie in the predicted bracket by its two teams (best-effort —
+    the projection may differ from reality), then reads the sibling feeder tie.
+    """
+    games = predicted_bracket_cached(sig)
+    if not games:
+        return None
+    rnd, feeds = _bracket_maps()
+    pair = {home, away}
+    for tid, g in games.items():
+        if {g["home"], g["away"]} == pair:
+            nxt = feeds.get(tid)
+            if not nxt:
+                return {"final": True}
+            next_tie, sib = nxt
+            sg = games.get(sib, {})
+            return {"round": rnd[next_tie],
+                    "rivalA": sg.get("home"), "rivalB": sg.get("away"),
+                    "fav": sg.get("winner")}
+    return None
 
 
 # column layout of the official bracket: left half feeds SF 101, right half SF 102
@@ -642,6 +712,58 @@ def _squad_stats(side: dict) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+def _mini_group_html(g: str, store, live_list: list[dict], focus: set[str]) -> str:
+    """One group's standings (live folded in), the two focus teams emphasised."""
+    df = group_standings(store, live_matches=live_list)[g]
+    rows = ('<div class="grow hd"><span>GROUP ' + g + '</span>'
+            '<span class="num">P</span><span class="num">PTS</span>'
+            '<span class="num">GD</span></div>')
+    for pos, (_, r) in enumerate(df.iterrows()):
+        dot = "#10b981" if pos < 2 else "#f59e0b" if pos == 2 else "transparent"
+        hi = "background:rgba(59,130,246,.14);border-radius:8px;" \
+            if r["team"] in focus else ""
+        star = "<span class='lvstar'>•</span>" if r.get("live") else ""
+        rows += (f'<div class="grow" style="{hi}grid-template-columns:'
+                 f'minmax(0,1fr) 1.6rem 2rem 2.4rem">'
+                 f'<span class="tm"><span class="qdot" style="background:{dot}">'
+                 f'</span>{flag(r["team"])}{star}</span>'
+                 f'<span class="num">{int(r["P"])}</span>'
+                 f'<span class="num">{int(r["Pts"])}</span>'
+                 f'<span class="num">{int(r["GD"]):+d}</span></div>')
+    return f'<div class="grp-card">{rows}</div>'
+
+
+def match_context(m: dict) -> None:
+    """Group standings (group stage) or projected next-round rivals (knockout)."""
+    from src.data.auto_results import infer_stage
+    home, away = m["home"], m["away"]
+    stage = infer_stage(m["kickoff"], home, away)
+    live_list = [m] if m["state"] == "in" else []
+
+    if stage == "group" or (stage is None
+                            and CONFIG.group_of(home) == CONFIG.group_of(away)):
+        g = CONFIG.group_of(home)
+        st.markdown(f"**Group {g} — standings**"
+                    + (" *(live, provisional)*" if live_list else ""))
+        st.markdown(_mini_group_html(g, _store(), live_list, {home, away}),
+                    unsafe_allow_html=True)
+    else:
+        sig = f"{_ODDS_PATH.stat().st_mtime if _ODDS_PATH.exists() else 0}"
+        ctx = knockout_context(home, away, sig)
+        if not ctx:
+            st.caption("Bracket position for this tie isn't resolved yet.")
+        elif ctx.get("final"):
+            st.markdown("**🏆 This is the Final — the winner lifts the trophy.**")
+        elif ctx.get("rivalA"):
+            st.markdown(
+                f"**Next up:** the winner advances to the **{ctx['round']}** to face "
+                f"the winner of **{flag(ctx['rivalA'])}** vs **{flag(ctx['rivalB'])}** "
+                f"— model favours {flag(ctx['fav'])}.")
+        else:
+            st.caption(f"Winner reaches the **{ctx['round']}**; "
+                       "the opponent isn't set yet.")
+
+
 def match_detail(m: dict, mp) -> None:
     """Every visualization the feed supports for one match: win-probability
     timeline (reconstructed from the goal events), projected/expected scoreline
@@ -655,6 +777,8 @@ def match_detail(m: dict, mp) -> None:
     pre = mp.predict(home, away, not CONFIG.is_host(home))
     events = m.get("events", [])
     kid = f"{home}-{away}"
+
+    match_context(m)
 
     if events:
         icons = {"goal": "⚽", "yellow": "🟨", "red": "🟥"}
@@ -1042,14 +1166,13 @@ with tab_odds:
 # ---------------------------------------------------------------- Groups
 @st.fragment(run_every=30)
 def groups_board():
-    st.caption("Standings from played results · bar = P(reach Round of 32) from the "
-               "latest simulation · "
+    st.caption("Points & goals update live as matches play (provisional) · bar = "
+               "P(reach Round of 32) from the latest simulation · "
                "<span class='qdot' style='background:#10b981'></span> direct "
                "<span class='qdot' style='background:#f59e0b'></span> best-third race "
-               "· in-play teams glow red with the live score (refreshes every minute)",
+               "· in-play teams glow red (refreshes every 30s)",
                unsafe_allow_html=True)
     store = _store()
-    tables = group_standings(store)
     t = load_table()
     odds_ix = t.set_index("team") if t is not None else None
 
@@ -1059,6 +1182,7 @@ def groups_board():
         board = []
     live_teams: dict[str, dict] = {}
     live_by_group: dict[str, list[dict]] = {}
+    live_list: list[dict] = []
     for m in board:
         if m["state"] != "in":
             continue
@@ -1066,11 +1190,19 @@ def groups_board():
             live_teams[m["home"]] = m
             live_teams[m["away"]] = m
             live_by_group.setdefault(CONFIG.group_of(m["home"]), []).append(m)
+            live_list.append(m)
+
+    tables = group_standings(store, live_matches=live_list)
+    played_by_group = {g: 0 for g in CONFIG.groups}
+    for r in store.results:
+        if r.stage == "group" and r.home in CONFIG.teams:
+            played_by_group[CONFIG.group_of(r.home)] += 1
 
     cards = ""
     for g in CONFIG.groups:
         df = tables[g]
-        played = int(df["P"].sum()) // 2
+        played = played_by_group[g]
+        n_live = len(live_by_group.get(g, []))
         rows = ('<div class="grow hd"><span>TEAM</span><span class="num">PTS</span>'
                 '<span class="num">GD</span><span>ADVANCE</span>'
                 '<span class="pc">%</span></div>')
@@ -1078,9 +1210,10 @@ def groups_board():
             adv = float(odds_ix.loc[r["team"], "round32"]) * 100 if odds_ix is not None else 0
             dot = ("#10b981" if pos < 2 else "#f59e0b" if pos == 2 else "transparent")
             now = " now" if r["team"] in live_teams else ""
+            star = "<span class='lvstar'>•</span>" if r.get("live") else ""
             rows += (f'<div class="grow{now}">'
                      f'<span class="tm"><span class="qdot" style="background:{dot}">'
-                     f'</span>{flag(r["team"])}</span>'
+                     f'</span>{flag(r["team"])}{star}</span>'
                      f'<span class="num">{r["Pts"]}</span>'
                      f'<span class="num">{r["GD"]:+d}</span>'
                      f'<span class="adv"><div style="width:{adv:.0f}%"></div></span>'
@@ -1092,8 +1225,9 @@ def groups_board():
                           f'{m["away_score"]} {flag(m["away"])}</span>'
                           f'<span class="min">{m["detail"]}</span></div>')
         card_cls = " now" if g in live_by_group else ""
+        sub = f'{played}/6 played' + (f' · {n_live} live' if n_live else '')
         cards += (f'<div class="grp-card{card_cls}"><div class="gh">GROUP {g}'
-                  f'<small>{played}/6 played</small></div>{rows}{live_line}</div>')
+                  f'<small>{sub}</small></div>{rows}{live_line}</div>')
     st.markdown(f'<div class="grid g-grp">{cards}</div>', unsafe_allow_html=True)
 
     played_res = [r for r in store.results if r.stage == "group"]
