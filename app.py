@@ -91,6 +91,12 @@ st.markdown(f"""
 .stApp h1, .stApp h2, .stApp h3, .stApp h4, .stApp button {{
   font-family:'Outfit', -apple-system, 'Segoe UI', sans-serif;
 }}
+/* keep Streamlit's icon fonts intact (sidebar arrows, expander chevrons, menu) */
+.stApp [data-testid="stIconMaterial"],
+.stApp .material-symbols-rounded, .stApp .material-symbols-outlined,
+span[data-testid="stIconMaterial"] {{
+  font-family:'Material Symbols Rounded','Material Symbols Outlined' !important;
+}}
 .block-container {{ padding: 1.0rem 1.4rem 4rem; max-width: 1500px; }}
 @media (max-width: 640px) {{
   .block-container {{ padding: .55rem .55rem 4rem; }}
@@ -219,6 +225,14 @@ header[data-testid="stHeader"] {{ background: transparent; }}
          margin-right:.3rem; vertical-align:1px; }}
 .adv {{ height:6px; background:var(--line); border-radius:3px; overflow:hidden; }}
 .adv div {{ height:100%; background:linear-gradient(90deg, var(--green), #34d399); }}
+.grow.now {{ background:rgba(225,29,72,.13); border-radius:8px;
+             box-shadow:inset 2px 0 0 var(--red); }}
+.grp-card.now {{ border-color:var(--red); }}
+.glive {{ margin-top:.45rem; font-size:.76rem; font-weight:600; color:#fda4af;
+          display:flex; gap:.4rem; align-items:center; }}
+.glive .dot {{ width:8px; height:8px; border-radius:50%; background:var(--red);
+               animation:lvpulse 1.6s infinite; flex:none; }}
+.glive .min {{ color:var(--mut); font-weight:400; }}
 
 /* ---- bracket wallchart ---- */
 .bk-wrap {{ overflow-x:auto; padding-bottom:.5rem; }}
@@ -704,16 +718,32 @@ with tab_odds:
                    for c in _STAGE_COLS if c != "champion"}})
 
 # ---------------------------------------------------------------- Groups
-with tab_groups:
-    st.subheader("Group stage — standings & advance odds")
+@st.fragment(run_every=60)
+def groups_board():
     st.caption("Standings from played results · bar = P(reach Round of 32) from the "
                "latest simulation · "
                "<span class='qdot' style='background:#10b981'></span> direct "
-               "<span class='qdot' style='background:#f59e0b'></span> best-third race",
+               "<span class='qdot' style='background:#f59e0b'></span> best-third race "
+               "· in-play teams glow red with the live score (refreshes every minute)",
                unsafe_allow_html=True)
     store = _store()
     tables = group_standings(store)
-    odds_ix = table.set_index("team") if table is not None else None
+    t = load_table()
+    odds_ix = t.set_index("team") if t is not None else None
+
+    try:
+        board = fetch_board()
+    except Exception:
+        board = []
+    live_teams: dict[str, dict] = {}
+    live_by_group: dict[str, list[dict]] = {}
+    for m in board:
+        if m["state"] != "in":
+            continue
+        if m["home"] in CONFIG.teams and m["away"] in CONFIG.teams:
+            live_teams[m["home"]] = m
+            live_teams[m["away"]] = m
+            live_by_group.setdefault(CONFIG.group_of(m["home"]), []).append(m)
 
     cards = ""
     for g in CONFIG.groups:
@@ -725,15 +755,23 @@ with tab_groups:
         for pos, (_, r) in enumerate(df.iterrows()):
             adv = float(odds_ix.loc[r["team"], "round32"]) * 100 if odds_ix is not None else 0
             dot = ("#10b981" if pos < 2 else "#f59e0b" if pos == 2 else "transparent")
-            rows += (f'<div class="grow">'
+            now = " now" if r["team"] in live_teams else ""
+            rows += (f'<div class="grow{now}">'
                      f'<span class="tm"><span class="qdot" style="background:{dot}">'
                      f'</span>{flag(r["team"])}</span>'
                      f'<span class="num">{r["Pts"]}</span>'
                      f'<span class="num">{r["GD"]:+d}</span>'
                      f'<span class="adv"><div style="width:{adv:.0f}%"></div></span>'
                      f'<span class="pc">{adv:.0f}</span></div>')
-        cards += (f'<div class="grp-card"><div class="gh">GROUP {g}'
-                  f'<small>{played}/6 played</small></div>{rows}</div>')
+        live_line = ""
+        for m in live_by_group.get(g, []):
+            live_line += (f'<div class="glive"><span class="dot"></span>'
+                          f'<span>{flag(m["home"])} {m["home_score"]} – '
+                          f'{m["away_score"]} {flag(m["away"])}</span>'
+                          f'<span class="min">{m["detail"]}</span></div>')
+        card_cls = " now" if g in live_by_group else ""
+        cards += (f'<div class="grp-card{card_cls}"><div class="gh">GROUP {g}'
+                  f'<small>{played}/6 played</small></div>{rows}{live_line}</div>')
     st.markdown(f'<div class="grid g-grp">{cards}</div>', unsafe_allow_html=True)
 
     played_res = [r for r in store.results if r.stage == "group"]
@@ -742,6 +780,11 @@ with tab_groups:
         st.markdown("  \n".join(
             f"`{r.date}` **{flag(r.home)} {r.home_score} – {r.away_score} {flag(r.away)}**"
             for r in played_res))
+
+
+with tab_groups:
+    st.subheader("Group stage — standings & advance odds")
+    groups_board()
 
 # ---------------------------------------------------------------- Bracket
 with tab_bracket:
