@@ -3,7 +3,8 @@
 Tabs:
   Live           ESPN live scoreboard joined to the model: in-play conditional W/D/L,
                  stats, match-detail visuals (win-prob timeline from the goal feed,
-                 projected scoreline, total-goals dist), played board (60s refresh)
+                 projected scoreline, total-goals dist), both squads on a pitch with
+                 live per-player stats; refreshes every 30s
   Fixtures       all incoming matches grouped by day, filterable by team
   Odds           champion / stage probabilities for all 48 teams (plotly + table)
   Groups         live standings from recorded results + advance probabilities
@@ -301,6 +302,24 @@ header[data-testid="stHeader"] {{ background: transparent; }}
   .pitch::before {{ width:92px; height:92px; }}
 }}
 
+/* ---- two-team match lineup pitch ---- */
+.pitch.match {{ gap:.25rem; padding:.7rem .35rem; }}
+.pitch.match .ptok {{ width:64px; }}
+.pitch.match .ptok img {{ width:36px; height:36px; }}
+.pitch.match .ptok .mono {{ width:32px; height:32px; font-size:.78rem; }}
+.pitch.match .ptok .nm {{ font-size:.6rem; max-width:66px; margin-top:.05rem; }}
+.pitch.match .ptok .sb {{ font-size:.66rem; min-height:.8rem; }}
+.pteam {{ position:relative; z-index:2; display:flex; justify-content:space-between;
+  align-items:center; color:#fff; font-weight:700; font-size:.78rem;
+  padding:.1rem .4rem; text-shadow:0 1px 3px rgba(0,0,0,.7); }}
+.pteam small {{ color:#dbe4f5; font-weight:400; }}
+@media (max-width:640px) {{
+  .pitch.match .ptok {{ width:46px; }}
+  .pitch.match .ptok img {{ width:29px; height:29px; }}
+  .pitch.match .ptok .nm {{ font-size:.53rem; max-width:48px; }}
+  .pitch.match .ptok .mono {{ width:27px; height:27px; font-size:.66rem; }}
+}}
+
 /* ---- misc ---- */
 .stButton > button {{ border-radius:12px; font-weight:700; }}
 div[data-testid="stMetricValue"] {{ font-size:1.5rem; }}
@@ -456,7 +475,7 @@ def bracket_html(games: dict[int, dict], champ_prob: float) -> str:
 
 
 # ---------------------------------------------------------------- live board
-@st.cache_data(ttl=45, show_spinner=False)
+@st.cache_data(ttl=25, show_spinner=False)
 def fetch_board():
     from src.data import espn_live
     return espn_live.fetch_scoreboard()
@@ -554,6 +573,75 @@ def _score_heat(matrix: np.ndarray, home: str, away: str, *, h0: int = 0, a0: in
     st.plotly_chart(_plot(fig, height), width='stretch', key=key)
 
 
+@st.cache_data(ttl=25, show_spinner=False)
+def load_lineups(event_id: str):
+    from src.data import espn_players
+    return espn_players.fetch_match_lineups(event_id)
+
+
+def _order_lr(players: list[dict]) -> list[dict]:
+    """Order a position row left→right using the position-abbreviation suffix."""
+    def lr(p: str) -> int:
+        p = (p or "").upper()
+        if p.endswith("-L") or p in ("LB", "LM", "LW", "LWB"):
+            return -1
+        if p.endswith("-R") or p in ("RB", "RM", "RW", "RWB"):
+            return 1
+        return 0
+    return sorted(players, key=lambda x: lr(x["pos"]))
+
+
+def _squad_pitch(lu: dict) -> str:
+    """Both starting XIs on one vertical field: away attacks down, home attacks up."""
+    def tok(p: dict) -> str:
+        if p["jersey"]:
+            img = f'<img src="{p["jersey"]}" alt="">'
+        else:
+            img = f'<div class="mono">{p["number"]}</div>'
+        marks = "⚽" * int(p["goals"])
+        if p["red"]:
+            marks += "🟥"
+        elif p["yellow"]:
+            marks += "🟨"
+        if p["subbed_out"]:
+            marks += "↩"
+        return (f'<div class="ptok">{img}'
+                f'<div class="nm">{p["number"]} {p["surname"]}</div>'
+                f'<div class="sb">{marks or "&nbsp;"}</div></div>')
+
+    def row(side: dict, role: str) -> str:
+        ps = _order_lr([p for p in side["starters"] if p["role"] == role])
+        return f'<div class="prow">{"".join(tok(p) for p in ps)}</div>' if ps else ""
+
+    home, away = lu.get("home", {}), lu.get("away", {})
+    if not home or not away:
+        return ""
+    away_h = (f'<div class="pteam"><span>{flag(away["team"])}</span>'
+              f'<small>{away["formation"]} · attacking ↓</small></div>')
+    home_h = (f'<div class="pteam"><span>{flag(home["team"])}</span>'
+              f'<small>{home["formation"]} · attacking ↑</small></div>')
+    body = (away_h
+            + "".join(row(away, r) for r in ["GK", "DEF", "MID", "FWD"])
+            + "".join(row(home, r) for r in ["FWD", "MID", "DEF", "GK"])
+            + home_h)
+    return f'<div class="pitch match"><div class="pbox top"></div>' \
+           f'<div class="pbox bot"></div>{body}</div>'
+
+
+def _squad_stats(side: dict) -> pd.DataFrame:
+    """Live per-player stat table for one team (starters + players who came on)."""
+    rows = []
+    for p in side["starters"] + [s for s in side["subs"] if s["subbed_in"]]:
+        rows.append({
+            "#": p["number"], "player": f'{p["surname"]}',
+            "pos": p["pos"], "G": int(p["goals"]), "A": int(p["assists"]),
+            "Sh": int(p["shots"]), "SOT": int(p["sot"]),
+            "Sv": int(p["saves"]), "F": int(p["fouls"]),
+            "C": "🟥" if p["red"] else "🟨" if p["yellow"] else "",
+        })
+    return pd.DataFrame(rows)
+
+
 def match_detail(m: dict, mp) -> None:
     """Every visualization the feed supports for one match: win-probability
     timeline (reconstructed from the goal events), projected/expected scoreline
@@ -642,6 +730,31 @@ def match_detail(m: dict, mp) -> None:
             fig.update_layout(yaxis_title="P %", xaxis_title="goals")
             st.plotly_chart(_plot(fig, 240), width='stretch', key=f"tg-{kid}")
 
+    # ---- squads on the pitch + live player stats ----
+    if m["state"] != "pre" or m.get("id"):
+        try:
+            lu = load_lineups(m["id"]) if m.get("id") else {}
+        except Exception:
+            lu = {}
+        pitch = _squad_pitch(lu) if lu else ""
+        if pitch:
+            st.markdown("**Line-ups**" + (" — live stats" if m["state"] == "in"
+                                          else ""))
+            st.markdown(pitch, unsafe_allow_html=True)
+            st.caption("⚽ = goals · 🟨/🟥 = card · ↩ = substituted off. "
+                       "Rows are positional (left→right); jerseys are ESPN kits.")
+            sc1, sc2 = st.columns(2)
+            for col, ha in ((sc1, "away"), (sc2, "home")):
+                with col:
+                    st.markdown(f"**{flag(lu[ha]['team'])}**")
+                    st.dataframe(_squad_stats(lu[ha]), hide_index=True,
+                                 width='stretch',
+                                 column_config={"player": st.column_config.TextColumn(
+                                     width="medium")})
+        elif m["state"] == "pre":
+            st.caption("Line-ups appear here once they're announced "
+                       "(usually about an hour before kick-off).")
+
 
 def _countdown(m: dict) -> None:
     """Ticking JS countdown to the next kickoff (CDMX time shown)."""
@@ -676,7 +789,7 @@ def _countdown(m: dict) -> None:
     </script>""", height=72)
 
 
-@st.fragment(run_every=60)
+@st.fragment(run_every=30)
 def live_board():
     try:
         board = fetch_board()
@@ -927,7 +1040,7 @@ with tab_odds:
                    for c in _STAGE_COLS if c != "champion"}})
 
 # ---------------------------------------------------------------- Groups
-@st.fragment(run_every=60)
+@st.fragment(run_every=30)
 def groups_board():
     st.caption("Standings from played results · bar = P(reach Round of 32) from the "
                "latest simulation · "

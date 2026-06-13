@@ -93,6 +93,53 @@ def fetch_match_players(event_id: str, *, finished: bool, timeout: int = 20
     return rows
 
 
+def fetch_match_lineups(event_id: str, *, timeout: int = 20) -> dict:
+    """Both starting XIs for one match: team, formation, and per-player live stats.
+
+    Returns {"home": side, "away": side} where side has team/formation/starters/subs;
+    each player carries position, role, jersey image+number, and the live stat vector.
+    Empty dict when lineups aren't published yet.
+    """
+    r = requests.get(_SUMMARY, params={"event": event_id}, timeout=timeout)
+    r.raise_for_status()
+    out: dict = {}
+    for block in r.json().get("rosters", []) or []:
+        ha = block.get("homeAway", "home")
+        starters, subs = [], []
+        for p in block.get("roster", []) or []:
+            ath = p.get("athlete", {})
+            pos = p.get("position", {}).get("abbreviation", "")
+            stats = {s.get("name"): s.get("value", 0) for s in p.get("stats", [])}
+            jerseys = ath.get("jerseyImages") or []
+            jersey = next((j.get("href") for j in jerseys
+                           if "dark" in (j.get("rel") or [])),
+                          jerseys[0].get("href") if jerseys else "")
+            rec = {
+                "player": ath.get("displayName", ""),
+                "surname": (ath.get("displayName", "") or "").split()[-1],
+                "number": str(p.get("jersey", "")),
+                "pos": pos, "role": _role(p.get("position", {}).get("displayName", "")),
+                "jersey": jersey, "starter": bool(p.get("starter")),
+                "subbed_out": bool(p.get("subbedOut")),
+                "subbed_in": bool(p.get("subbedIn")),
+                "goals": float(stats.get("totalGoals", 0) or 0),
+                "assists": float(stats.get("goalAssists", 0) or 0),
+                "shots": float(stats.get("totalShots", 0) or 0),
+                "sot": float(stats.get("shotsOnTarget", 0) or 0),
+                "saves": float(stats.get("saves", 0) or 0),
+                "fouls": float(stats.get("foulsCommitted", 0) or 0),
+                "yellow": float(stats.get("yellowCards", 0) or 0),
+                "red": float(stats.get("redCards", 0) or 0),
+            }
+            (starters if rec["starter"] else subs).append(rec)
+        out[ha] = {
+            "team": CONFIG.normalize(block.get("team", {}).get("displayName", "")),
+            "formation": block.get("formation", ""),
+            "starters": starters, "subs": subs,
+        }
+    return out
+
+
 def build_player_frame(board: list[dict]) -> pd.DataFrame:
     """Concatenate per-player rows for every played match on the board, tagged by
     the round it belongs to (group / R32 / ...)."""

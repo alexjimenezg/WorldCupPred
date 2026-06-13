@@ -1,21 +1,5 @@
 [
   {
-    "home": "Canada",
-    "away": "Bosnia and Herzegovina",
-    "home_score": 1,
-    "away_score": 1,
-    "stage": "group",
-    "date": "2026-06-12"
-  },
-  {
-    "home": "United States",
-    "away": "Paraguay",
-    "home_score": 4,
-    "away_score": 1,
-    "stage": "group",
-    "date": "2026-06-13"
-  },
-  {
     "home": "Mexico",
     "away": "South Africa",
     "home_score": 2,
@@ -30,5 +14,21 @@
     "away_score": 1,
     "stage": "group",
     "date": "2026-06-11"
+  },
+  {
+    "home": "Canada",
+    "away": "Bosnia and Herzegovina",
+    "home_score": 1,
+    "away_score": 1,
+    "stage": "group",
+    "date": "2026-06-12"
+  },
+  {
+    "home": "United States",
+    "away": "Paraguay",
+    "home_score": 4,
+    "away_score": 1,
+    "stage": "group",
+    "date": "2026-06-12"
   }
 ]
