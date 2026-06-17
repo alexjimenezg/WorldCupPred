@@ -260,6 +260,15 @@ header[data-testid="stHeader"] {{ background: transparent; }}
              padding:.5rem .4rem; margin-bottom:.5rem; }}
 .bk-champ .c {{ font-size:1rem; font-weight:800; }}
 .bk-champ .s {{ color:var(--mut); font-size:.7rem; }}
+.bk-tie.live {{ border-color:var(--red);
+               box-shadow:0 0 0 1px rgba(225,29,72,.35); }}
+.bk-tie.decided {{ border-color:var(--green); }}
+.bk-live-badge {{ color:#fff; background:var(--red); border-radius:4px;
+                  padding:.02rem .32rem; font-size:.55rem; font-weight:700;
+                  animation:lvpulse 1.6s infinite; margin-left:.28rem; }}
+.bk-score {{ text-align:center; font-weight:800; font-size:.8rem; margin:.1rem 0;
+             font-variant-numeric:tabular-nums; }}
+.bk-detail {{ color:var(--mut); font-size:.6rem; font-weight:400; margin-left:.25rem; }}
 
 /* ---- dream-team pitch ---- */
 .pitch {{
@@ -521,15 +530,40 @@ _BK_COLS: list[tuple[str, list[int]]] = [
 ]
 
 
-def bracket_html(games: dict[int, dict], champ_prob: float) -> str:
+def bracket_html(games: dict[int, dict], champ_prob: float,
+                 live_tids: set[int] | None = None,
+                 decided_tids: set[int] | None = None) -> str:
+    live_tids = live_tids or set()
+    decided_tids = decided_tids or set()
+
     def tie(tid: int) -> str:
         g = games[tid]
+        is_live = tid in live_tids
+        is_decided = tid in decided_tids
+        score = g.get("score")
+
         rows = ""
-        for team, p in ((g["home"], g["p"]), (g["away"], 1 - g["p"])):
+        for i, (team, p) in enumerate(((g["home"], g["p"]), (g["away"], 1 - g["p"]))):
             cls = "w" if team == g["winner"] else "l"
+            if score is not None:
+                right = f'<span class="pp">{score[i]}</span>'
+            else:
+                right = f'<span class="pp">{p*100:.0f}%</span>'
             rows += (f'<div class="tm {cls}"><span>{flag(team)}</span>'
-                     f'<span class="pp">{p*100:.0f}%</span></div>')
-        return f'<div class="bk-tie"><div class="bk-id">M{tid}</div>{rows}</div>'
+                     f'{right}</div>')
+
+        live_badge = '<span class="bk-live-badge">LIVE</span>' if is_live else ""
+        detail_span = (f'<span class="bk-detail">{g["detail"]}</span>'
+                       if is_live and g.get("detail") else "")
+        score_line = ""
+        if is_live and score is not None:
+            score_line = (f'<div class="bk-score">{score[0]}–{score[1]}'
+                          f'{detail_span}</div>')
+
+        extra_cls = " live" if is_live else (" decided" if is_decided else "")
+        return (f'<div class="bk-tie{extra_cls}">'
+                f'<div class="bk-id">M{tid}{live_badge}</div>'
+                f'{score_line}{rows}</div>')
 
     cols = ""
     for label, tids in _BK_COLS:
@@ -1243,6 +1277,107 @@ with tab_groups:
     groups_board()
 
 # ---------------------------------------------------------------- Bracket
+@st.fragment(run_every=30)
+def bracket_board(table: pd.DataFrame) -> None:
+    """Bracket wallchart: auto-refreshes every 30s to fold in live/finished matches."""
+    from src.models.inplay import conditional_outcome
+
+    sig = f"{_ODDS_PATH.stat().st_mtime if _ODDS_PATH.exists() else 0}"
+    # Deep-copy so we can mutate without poisoning the cache
+    games: dict[int, dict] = {k: dict(v) for k, v in predicted_bracket_cached(sig).items()}
+    if not games:
+        st.info("No simulation yet.")
+        return
+
+    # Build pair -> tie_id lookup for fast matching against ESPN data
+    pair_to_tid: dict[frozenset, int] = {
+        frozenset({g["home"], g["away"]}): tid for tid, g in games.items()
+    }
+
+    live_tids: set[int] = set()
+    decided_tids: set[int] = set()
+
+    # 1. Apply stored knockout results (authoritative, from the results_store)
+    knockout_stages = {"round32", "round16", "quarterfinal", "semifinal", "final"}
+    for r in _store().results:
+        if r.stage not in knockout_stages:
+            continue
+        tid = pair_to_tid.get(frozenset({r.home, r.away}))
+        if tid is None:
+            continue
+        if r.home_score > r.away_score:
+            winner, p = r.home, 1.0
+        elif r.home_score < r.away_score:
+            winner, p = r.away, 0.0
+        else:
+            # ET/penalties: keep predicted winner if score is level
+            winner = games[tid]["winner"]
+            p = 1.0 if winner == games[tid]["home"] else 0.0
+        games[tid].update({"winner": winner, "p": p,
+                           "score": (r.home_score, r.away_score), "decided": True})
+        decided_tids.add(tid)
+
+    # 2. Overlay live ESPN data (in-play conditional probability or finished score)
+    try:
+        board = fetch_board()
+    except Exception:
+        board = []
+
+    mp = load_predictor(False)
+    for m in board:
+        if m["home"] not in CONFIG.teams or m["away"] not in CONFIG.teams:
+            continue
+        tid = pair_to_tid.get(frozenset({m["home"], m["away"]}))
+        if tid is None:
+            continue
+        g = games[tid]
+        if m["state"] == "in":
+            pre = mp.predict(m["home"], m["away"], True)
+            cond = conditional_outcome(
+                pre["lambda_home"], pre["lambda_away"],
+                home_score=m["home_score"], away_score=m["away_score"],
+                minute=m["minute"],
+            )
+            # Knockout: no draw possible in the end, normalise home vs away only
+            ph, pa = cond["p_home"], cond["p_away"]
+            p = ph / (ph + pa) if (ph + pa) > 0 else 0.5
+            games[tid].update({
+                "p": p,
+                "winner": g["home"] if p >= 0.5 else g["away"],
+                "score": (m["home_score"], m["away_score"]),
+                "detail": m["detail"],
+                "live": True,
+            })
+            live_tids.add(tid)
+        elif m["state"] == "post" and tid not in decided_tids:
+            if m["home_score"] > m["away_score"]:
+                winner, p = m["home"], 1.0
+            elif m["home_score"] < m["away_score"]:
+                winner, p = m["away"], 0.0
+            else:
+                winner = g["winner"]
+                p = 1.0 if winner == g["home"] else 0.0
+            games[tid].update({"winner": winner, "p": p,
+                               "score": (m["home_score"], m["away_score"]), "decided": True})
+            decided_tids.add(tid)
+
+    champ = games[104]["winner"]
+    champ_prob = float(table.set_index("team").loc[champ, "champion"])
+
+    if live_tids:
+        st.markdown(
+            '<div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.4rem;">'
+            '<span class="lv-badge">LIVE</span>'
+            '<span style="color:var(--mut);font-size:.8rem;">'
+            'Bracket is updating with live match probabilities</span></div>',
+            unsafe_allow_html=True,
+        )
+
+    st.markdown(bracket_html(games, champ_prob,
+                             live_tids=live_tids, decided_tids=decided_tids),
+                unsafe_allow_html=True)
+
+
 with tab_bracket:
     if table is None:
         st.info("No simulation yet.")
@@ -1251,12 +1386,9 @@ with tab_bracket:
         st.caption("Modal wallchart: groups resolved by P(win group) with FIFA's official "
                    "third-place slot allocation, then the ensemble's favorite advances at "
                    "every node (percentages = win the tie if it happens, draws resolved "
-                   "by the ET/penalty model). The title odds integrate over *all* paths — "
-                   "this chart shows the single most likely one. Swipe sideways on a phone.")
-        games = predicted_bracket(table)
-        champ = games[104]["winner"]
-        champ_prob = float(table.set_index("team").loc[champ, "champion"])
-        st.markdown(bracket_html(games, champ_prob), unsafe_allow_html=True)
+                   "by the ET/penalty model). Live knockout matches update probabilities "
+                   "every 30 s; green border = result confirmed. Swipe sideways on a phone.")
+        bracket_board(table)
 
         st.divider()
         st.subheader("Road to the title")
