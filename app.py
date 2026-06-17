@@ -422,16 +422,38 @@ def group_standings(store, live_matches: list[dict] | None = None
     return out
 
 
-def most_likely_bracket(table: pd.DataFrame) -> list[tuple[int, str, str]]:
-    """Illustrative R32 line-up: rank each group by win_group, allocate the 8 most
-    probable thirds with the real FIFA slot table."""
+def most_likely_bracket(table: pd.DataFrame, standings: dict | None = None
+                        ) -> list[tuple[int, str, str]]:
+    """Illustrative R32 line-up. Rank each group by *actual* standings so far
+    (points, then goal difference, then goals for) with the simulation's
+    win_group probability as the final tiebreaker / fallback for matches that
+    haven't been played yet, then allocate the 8 best thirds with the real FIFA
+    slot table.
+
+    `standings`: optional per-group sorted DataFrames from `group_standings`
+    (live + recorded results folded in). When omitted the bracket is built from
+    the simulation alone (pre-tournament behaviour)."""
     from src.simulation import tournament_2026 as T
-    slot, thirds, third_p = {}, {}, {}
+    wg = table.set_index("team")["win_group"].to_dict()
+    r32 = table.set_index("team")["round32"].to_dict()
+    slot, thirds, third_key = {}, {}, {}
     for g, df in table.groupby("group"):
-        df = df.sort_values("win_group", ascending=False).reset_index(drop=True)
-        slot[f"1{g}"], slot[f"2{g}"] = df.loc[0, "team"], df.loc[1, "team"]
-        thirds[g], third_p[g] = df.loc[2, "team"], df.loc[2, "round32"]
-    qualifying = sorted(sorted(thirds, key=third_p.get, reverse=True)[:8])
+        if standings is not None and g in standings:
+            d = standings[g].copy()
+            d["wg"] = d["team"].map(wg).fillna(0.0)
+            d = d.sort_values(["Pts", "GD", "GF", "wg"], ascending=False
+                              ).reset_index(drop=True)
+            slot[f"1{g}"], slot[f"2{g}"] = d.loc[0, "team"], d.loc[1, "team"]
+            thirds[g] = d.loc[2, "team"]
+            t3 = d.loc[2]
+            third_key[g] = (int(t3["Pts"]), int(t3["GD"]), int(t3["GF"]),
+                            float(r32.get(t3["team"], 0.0)))
+        else:
+            d = df.sort_values("win_group", ascending=False).reset_index(drop=True)
+            slot[f"1{g}"], slot[f"2{g}"] = d.loc[0, "team"], d.loc[1, "team"]
+            thirds[g] = d.loc[2, "team"]
+            third_key[g] = (0, 0, 0, float(d.loc[2, "round32"]))
+    qualifying = sorted(sorted(thirds, key=third_key.get, reverse=True)[:8])
     alloc = T.allocate_thirds(qualifying)
     ties = []
     for tie_id, hs, as_ in T.BRACKET_R32:
@@ -440,10 +462,14 @@ def most_likely_bracket(table: pd.DataFrame) -> list[tuple[int, str, str]]:
     return ties
 
 
-def predicted_bracket(table: pd.DataFrame) -> dict[int, dict]:
+def predicted_bracket(table: pd.DataFrame, standings: dict | None = None
+                      ) -> dict[int, dict]:
     """Play the modal bracket out with the ensemble: at every node the favorite
     advances. p = P(side wins the tie | the matchup happens), draws resolved by
-    the same conditional used for ET/penalties in the simulator."""
+    the same conditional used for ET/penalties in the simulator.
+
+    `standings`: optional live group tables so the R32 line-up reflects results
+    to date (see `most_likely_bracket`)."""
     from src.simulation import tournament_2026 as T
     mp = load_predictor(False)
     games: dict[int, dict] = {}
@@ -455,7 +481,7 @@ def predicted_bracket(table: pd.DataFrame) -> dict[int, dict]:
         winners[tid] = home if p >= 0.5 else away
         games[tid] = {"home": home, "away": away, "p": p, "winner": winners[tid]}
 
-    for tid, home, away in most_likely_bracket(table):
+    for tid, home, away in most_likely_bracket(table, standings):
         play(tid, home, away)
     for bracket in (T.BRACKET_R16, T.BRACKET_QF, T.BRACKET_SF):
         for tid, s1, s2 in bracket:
@@ -1282,9 +1308,28 @@ def bracket_board(table: pd.DataFrame) -> None:
     """Bracket wallchart: auto-refreshes every 30s to fold in live/finished matches."""
     from src.models.inplay import conditional_outcome
 
-    sig = f"{_ODDS_PATH.stat().st_mtime if _ODDS_PATH.exists() else 0}"
-    # Deep-copy so we can mutate without poisoning the cache
-    games: dict[int, dict] = {k: dict(v) for k, v in predicted_bracket_cached(sig).items()}
+    if table is None:
+        st.info("No simulation yet.")
+        return
+
+    store = _store()
+
+    # Live in-play group matches → folded into the standings so the R32 line-up
+    # reflects results to date (mirrors the Groups tab).
+    try:
+        board = fetch_board()
+    except Exception:
+        board = []
+    live_group: list[dict] = [
+        m for m in board
+        if m["state"] == "in"
+        and m["home"] in CONFIG.teams and m["away"] in CONFIG.teams
+        and CONFIG.group_of(m["home"]) == CONFIG.group_of(m["away"])
+    ]
+    standings = group_standings(store, live_matches=live_group)
+
+    # Rebuild the bracket from the live standings (cheap: 31 ensemble look-ups).
+    games = predicted_bracket(table, standings)
     if not games:
         st.info("No simulation yet.")
         return
@@ -1299,7 +1344,7 @@ def bracket_board(table: pd.DataFrame) -> None:
 
     # 1. Apply stored knockout results (authoritative, from the results_store)
     knockout_stages = {"round32", "round16", "quarterfinal", "semifinal", "final"}
-    for r in _store().results:
+    for r in store.results:
         if r.stage not in knockout_stages:
             continue
         tid = pair_to_tid.get(frozenset({r.home, r.away}))
@@ -1317,12 +1362,9 @@ def bracket_board(table: pd.DataFrame) -> None:
                            "score": (r.home_score, r.away_score), "decided": True})
         decided_tids.add(tid)
 
-    # 2. Overlay live ESPN data (in-play conditional probability or finished score)
-    try:
-        board = fetch_board()
-    except Exception:
-        board = []
-
+    # 2. Overlay live ESPN data for knockout ties (in-play conditional
+    #    probability or finished score). Group matches already shaped the
+    #    line-up above; here we only touch ties that match a live/finished game.
     mp = load_predictor(False)
     for m in board:
         if m["home"] not in CONFIG.teams or m["away"] not in CONFIG.teams:
@@ -1383,11 +1425,13 @@ with tab_bracket:
         st.info("No simulation yet.")
     else:
         st.subheader("The bracket, as the model predicts it")
-        st.caption("Modal wallchart: groups resolved by P(win group) with FIFA's official "
-                   "third-place slot allocation, then the ensemble's favorite advances at "
-                   "every node (percentages = win the tie if it happens, draws resolved "
-                   "by the ET/penalty model). Live knockout matches update probabilities "
-                   "every 30 s; green border = result confirmed. Swipe sideways on a phone.")
+        st.caption("Modal wallchart: groups resolved by the live standings (points, "
+                   "then the simulation as tiebreaker) with FIFA's official third-place "
+                   "slot allocation, then the ensemble's favorite advances at every node "
+                   "(percentages = win the tie if it happens). The R32 line-up re-shapes "
+                   "as group results come in; live knockout ties show the in-play "
+                   "probability and a green border marks a confirmed result. "
+                   "Refreshes every 30 s — swipe sideways on a phone.")
         bracket_board(table)
 
         st.divider()
