@@ -462,24 +462,42 @@ def most_likely_bracket(table: pd.DataFrame, standings: dict | None = None
     return ties
 
 
-def predicted_bracket(table: pd.DataFrame, standings: dict | None = None
-                      ) -> dict[int, dict]:
+def predicted_bracket(table: pd.DataFrame, standings: dict | None = None,
+                      results: dict | None = None) -> dict[int, dict]:
     """Play the modal bracket out with the ensemble: at every node the favorite
     advances. p = P(side wins the tie | the matchup happens), draws resolved by
     the same conditional used for ET/penalties in the simulator.
 
     `standings`: optional live group tables so the R32 line-up reflects results
-    to date (see `most_likely_bracket`)."""
+    to date (see `most_likely_bracket`).
+    `results`: optional decided knockout outcomes keyed by frozenset({home, away})
+    -> {"score": (h, a), "winner": team|None}. A real result fixes that tie and
+    its winner advances, so an upset propagates through the rest of the bracket
+    instead of the model's prediction. A level score with no recorded shootout
+    winner (winner=None) keeps the model's survivor but shows the real score."""
     from src.simulation import tournament_2026 as T
     mp = load_predictor(False)
+    results = results or {}
     games: dict[int, dict] = {}
     winners: dict[int, str] = {}
 
     def play(tid: int, home: str, away: str) -> None:
-        out = mp.predict(home, away, True)  # knockouts at neutral venues
-        p = out["p_home"] / (out["p_home"] + out["p_away"])
-        winners[tid] = home if p >= 0.5 else away
-        games[tid] = {"home": home, "away": away, "p": p, "winner": winners[tid]}
+        actual = results.get(frozenset({home, away}))
+        if actual is not None:
+            winner = actual.get("winner")
+            if winner not in (home, away):  # unknown shootout → model picks survivor
+                out = mp.predict(home, away, True)
+                pm = out["p_home"] / (out["p_home"] + out["p_away"])
+                winner = home if pm >= 0.5 else away
+            p = 1.0 if winner == home else 0.0
+            games[tid] = {"home": home, "away": away, "p": p, "winner": winner,
+                          "score": actual.get("score"), "decided": True}
+        else:
+            out = mp.predict(home, away, True)  # knockouts at neutral venues
+            p = out["p_home"] / (out["p_home"] + out["p_away"])
+            winner = home if p >= 0.5 else away
+            games[tid] = {"home": home, "away": away, "p": p, "winner": winner}
+        winners[tid] = winner
 
     for tid, home, away in most_likely_bracket(table, standings):
         play(tid, home, away)
@@ -1355,8 +1373,27 @@ def bracket_board(table: pd.DataFrame) -> None:
     ]
     standings = group_standings(store, live_matches=live_group)
 
-    # Rebuild the bracket from the live standings (cheap: 31 ensemble look-ups).
-    games = predicted_bracket(table, standings)
+    # Decided knockout results (authoritative) keyed by pairing — these FIX the
+    # tie so the actual winner, not the prediction, advances down the bracket.
+    # (Store stages are R32/R16/QF/SF/final — KNOCKOUT_STAGES, not the odds-table
+    # column names.) A level score has no recorded shootout winner.
+    from src.results_store import KNOCKOUT_STAGES
+    ko_results: dict[frozenset, dict] = {}
+    for r in store.results:
+        if r.stage not in KNOCKOUT_STAGES:
+            continue
+        if r.home_score > r.away_score:
+            winner = r.home
+        elif r.home_score < r.away_score:
+            winner = r.away
+        else:
+            winner = None  # decided on penalties — shootout winner unknown
+        ko_results[frozenset({r.home, r.away})] = {
+            "score": (r.home_score, r.away_score), "winner": winner}
+
+    # Rebuild the bracket from live standings + decided knockouts (cheap: 31
+    # ensemble look-ups for the ties that aren't settled yet).
+    games = predicted_bracket(table, standings, ko_results)
     if not games:
         st.info("No simulation yet.")
         return
@@ -1367,31 +1404,11 @@ def bracket_board(table: pd.DataFrame) -> None:
     }
 
     live_tids: set[int] = set()
-    decided_tids: set[int] = set()
+    decided_tids: set[int] = {tid for tid, g in games.items() if g.get("decided")}
 
-    # 1. Apply stored knockout results (authoritative, from the results_store)
-    knockout_stages = {"round32", "round16", "quarterfinal", "semifinal", "final"}
-    for r in store.results:
-        if r.stage not in knockout_stages:
-            continue
-        tid = pair_to_tid.get(frozenset({r.home, r.away}))
-        if tid is None:
-            continue
-        if r.home_score > r.away_score:
-            winner, p = r.home, 1.0
-        elif r.home_score < r.away_score:
-            winner, p = r.away, 0.0
-        else:
-            # ET/penalties: keep predicted winner if score is level
-            winner = games[tid]["winner"]
-            p = 1.0 if winner == games[tid]["home"] else 0.0
-        games[tid].update({"winner": winner, "p": p,
-                           "score": (r.home_score, r.away_score), "decided": True})
-        decided_tids.add(tid)
-
-    # 2. Overlay live ESPN data for knockout ties (in-play conditional
-    #    probability or finished score). Group matches already shaped the
-    #    line-up above; here we only touch ties that match a live/finished game.
+    # Overlay live ESPN data for knockout ties: an in-play tie shows the live
+    # conditional probability; a finished tie not yet in the store shows its
+    # score. Ties already decided from the store are left as-is.
     mp = load_predictor(False)
     for m in board:
         if m["home"] not in CONFIG.teams or m["away"] not in CONFIG.teams:
@@ -1456,9 +1473,10 @@ with tab_bracket:
                    "then the simulation as tiebreaker) with FIFA's official third-place "
                    "slot allocation, then the ensemble's favorite advances at every node "
                    "(percentages = win the tie if it happens). The R32 line-up re-shapes "
-                   "as group results come in; live knockout ties show the in-play "
-                   "probability and a green border marks a confirmed result. "
-                   "Refreshes every 30 s — swipe sideways on a phone.")
+                   "as group results come in; a played knockout tie locks in the real "
+                   "winner (green border) and advances them down the bracket, while live "
+                   "ties show the in-play probability. Refreshes every 30 s — swipe "
+                   "sideways on a phone.")
         bracket_board(table)
 
         st.divider()
