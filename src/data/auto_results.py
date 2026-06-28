@@ -66,10 +66,38 @@ def fetch_wc2026_results(*, force: bool = True) -> pd.DataFrame:
     return wc.reset_index(drop=True)
 
 
+def knockout_fixtures(*, force: bool = False) -> dict[str, dict[str, str]]:
+    """The real knockout draw from martj42, INCLUDING matches not yet played.
+
+    `fetch_wc2026_results` drops blank-score rows, so the published bracket
+    (scheduled ties with no score yet) never reaches it — but that bracket is
+    exactly what we need to show the true pairings before kickoff. This reads
+    the raw schedule, keeps the knockout rounds, and returns, per stage label
+    (R32/R16/QF/SF/final), a team -> opponent map (both directions).
+    """
+    from src.data.kaggle_results import _fetch_csv
+    df = _fetch_csv("results", force=force)
+    df["date"] = pd.to_datetime(df["date"], errors="coerce")
+    opening = pd.Timestamp(CONFIG.groups_raw["dates"]["opening_match"])
+    wc = df[(df["tournament"] == "FIFA World Cup") & (df["date"] >= opening)]
+    out: dict[str, dict[str, str]] = {}
+    for _, m in wc.iterrows():
+        home = CONFIG.normalize(str(m["home_team"]))
+        away = CONFIG.normalize(str(m["away_team"]))
+        if home not in CONFIG.teams or away not in CONFIG.teams:
+            continue
+        stage = infer_stage(m["date"], home, away)
+        if stage is None or stage == "group":
+            continue
+        rd = out.setdefault(stage, {})
+        rd[home], rd[away] = away, home
+    return out
+
+
 def import_martj42_to_store(store: ResultsStore | None = None, *,
                             force: bool = True) -> int:
     """Upsert played WC 2026 matches from martj42 into the store. Returns rows applied."""
-    store = store or ResultsStore()
+    store = store if store is not None else ResultsStore()
     wc = fetch_wc2026_results(force=force)
     count = 0
     for _, m in wc.iterrows():
@@ -105,7 +133,7 @@ def sync_results(store: ResultsStore | None = None, *, force: bool = True) -> di
     Returns {"n_changed": new-or-corrected results, "total": store size,
              "sources": which sources answered}.
     """
-    store = store or ResultsStore()
+    store = store if store is not None else ResultsStore()
     before = _snapshot(store)
     sources: list[str] = []
 

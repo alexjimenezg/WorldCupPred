@@ -163,7 +163,7 @@ def import_board_to_store(board: list[dict], store=None) -> int:
     """
     from src.data.auto_results import infer_stage
     from src.results_store import ResultsStore
-    store = store or ResultsStore()
+    store = store if store is not None else ResultsStore()
     count = 0
     for m in board:
         if m.get("state") != "post":

@@ -378,6 +378,39 @@ def _store():
     return ResultsStore()
 
 
+@st.cache_data(ttl=600, show_spinner=False)
+def load_draw() -> dict[str, dict[str, str]]:
+    """The real knockout draw (stage -> {team: opponent}) from martj42, including
+    ties not played yet — so the bracket shows the true pairings. Empty on any
+    fetch error (the bracket then falls back to the modelled allocation)."""
+    try:
+        from src.data.auto_results import knockout_fixtures
+        return knockout_fixtures(force=False)
+    except Exception:
+        return {}
+
+
+@st.cache_data(ttl=600, show_spinner=False)
+def load_group_results() -> list[dict]:
+    """Every played group match from martj42 (home/away/scores). The bracket uses
+    these so its standings are COMPLETE — seeds and thirds rank correctly even if
+    the results store is a matchday behind. Empty on any fetch error."""
+    try:
+        from src.data.auto_results import fetch_wc2026_results, infer_stage
+        wc = fetch_wc2026_results(force=False)
+        out = []
+        for _, m in wc.iterrows():
+            h, a = CONFIG.normalize(str(m["home_team"])), CONFIG.normalize(str(m["away_team"]))
+            if h in CONFIG.teams and a in CONFIG.teams \
+                    and infer_stage(m["date"], h, a) == "group":
+                out.append({"home": h, "away": a,
+                            "home_score": int(m["home_score"]),
+                            "away_score": int(m["away_score"])})
+        return out
+    except Exception:
+        return []
+
+
 def run_sync(n_sims: int = 20000) -> None:
     """Pull results to-date; refit + re-simulate only if something new arrived."""
     from src import update as upd
@@ -436,6 +469,25 @@ def group_standings(store, live_matches: list[dict] | None = None
     return out
 
 
+def _alloc_thirds_subset(slots: list[int], groups: list[str]) -> dict[int, str]:
+    """Min-cost assignment of a SUBSET of third-place slots to the groups still
+    available, honouring each slot's eligible groups (THIRD_SLOT_GROUPS). Used to
+    fill the third-place slots the real draw hasn't pinned yet. Slots with no
+    eligible group left are left unassigned (caller falls back)."""
+    from src.simulation.tournament_2026 import THIRD_SLOT_GROUPS
+    from scipy.optimize import linear_sum_assignment
+    if not slots or not groups:
+        return {}
+    big = 1000.0
+    cost = np.full((len(slots), len(groups)), big)
+    for si, s in enumerate(slots):
+        for gi, g in enumerate(groups):
+            if g in THIRD_SLOT_GROUPS[s]:
+                cost[si, gi] = si * 0.001 + gi * 0.0001
+    r, c = linear_sum_assignment(cost)
+    return {slots[ri]: groups[ci] for ri, ci in zip(r, c) if cost[ri, ci] < big}
+
+
 def most_likely_bracket(table: pd.DataFrame, standings: dict | None = None,
                         fixtures: dict | None = None
                         ) -> list[tuple[int, str, str]]:
@@ -477,18 +529,35 @@ def most_likely_bracket(table: pd.DataFrame, standings: dict | None = None,
     qualifying = sorted(sorted(thirds, key=third_key.get, reverse=True)[:8])
     alloc = T.allocate_thirds(qualifying)
     fixtures = fixtures or {}
-    homes = {slot[hs] for _, hs, _ in T.BRACKET_R32}  # the 16 seeded home teams
-    # All-or-nothing: only swap in the real draw once it covers every seeded
-    # home (the draw is published atomically). A partial map would mix the real
-    # pairings with the model's allocation and could place a team in two ties.
-    use_draw = bool(fixtures) and homes.issubset(fixtures)
+    seeds = set(slot.values())  # every group winner & runner-up (the 1X/2X teams)
+
+    # Real third-place pairings from the published draw override the modelled
+    # allocation (FIFA's official third-place table isn't the min-cost matching
+    # we compute). Only the eight "3" slots are touched — winners/runners-up come
+    # straight from the standings — and the pinned opponent must be a non-seed
+    # (an actual third-placed team), so this can't duplicate anyone. Works with a
+    # PARTIAL draw: each known winner's real opponent is pinned, the remaining
+    # slots are filled from the qualifying thirds the draw hasn't consumed yet.
+    third_ties = [(tid, hs) for tid, hs, as_ in T.BRACKET_R32 if as_ == "3"]
+    away_by_tie: dict[int, str] = {}
+    used_groups: set[str] = set()
+    for tid, hs in third_ties:
+        opp = fixtures.get(slot[hs])
+        if opp and opp not in seeds and CONFIG.group_of(opp):
+            away_by_tie[tid] = opp                 # trust the real draw
+            used_groups.add(CONFIG.group_of(opp))
+    rest_slots = [tid for tid, _ in third_ties if tid not in away_by_tie]
+    rest_groups = [g for g in qualifying if g not in used_groups]
+    for tid, g in _alloc_thirds_subset(rest_slots, rest_groups).items():
+        away_by_tie[tid] = thirds[g]
+
     ties = []
     for tie_id, hs, as_ in T.BRACKET_R32:
         home = slot[hs]
-        if use_draw:
-            away = fixtures[home]                  # real draw is the source of truth
+        if as_ == "3":
+            away = away_by_tie.get(tie_id) or thirds[alloc[tie_id]]
         else:
-            away = thirds[alloc[tie_id]] if as_ == "3" else slot[as_]
+            away = slot[as_]
         ties.append((tie_id, home, away))
     return ties
 
@@ -1413,7 +1482,14 @@ def bracket_board(table: pd.DataFrame) -> None:
         and m["home"] in CONFIG.teams and m["away"] in CONFIG.teams
         and CONFIG.group_of(m["home"]) == CONFIG.group_of(m["away"])
     ]
-    standings = group_standings(store, live_matches=live_group)
+    # Complete the standings with martj42's group results the store hasn't folded
+    # in yet, so seeds/thirds rank correctly even if the store is a matchday
+    # behind (a wrong seed would anchor the real draw to the wrong tie).
+    recorded = {frozenset((r.home, r.away)) for r in store.results
+                if r.stage == "group"}
+    extra_group = [m for m in load_group_results()
+                   if frozenset((m["home"], m["away"])) not in recorded]
+    standings = group_standings(store, live_matches=extra_group + live_group)
 
     # Decided knockout results (authoritative) keyed by pairing — these FIX the
     # tie so the actual winner, not the prediction, advances down the bracket.
@@ -1433,18 +1509,21 @@ def bracket_board(table: pd.DataFrame) -> None:
         ko_results[frozenset({r.home, r.away})] = {
             "score": (r.home_score, r.away_score), "winner": winner}
 
-    # Real R32 pairings from the published draw (the board lists them as soon as
-    # the groups resolve). team -> opponent, both directions; overrides the
-    # modelled third-place allocation so e.g. a host's true R32 rival is right.
+    # Real R32 pairings (team -> opponent, both directions) override the modelled
+    # third-place allocation so e.g. a host's true R32 rival is right. Primary
+    # source is the published draw from martj42 (it lists the scheduled ties with
+    # blank scores the moment the groups resolve); the live board and any stored
+    # R32 results top it up.
+    r32_fixtures: dict[str, str] = dict(load_draw().get("R32", {}))
     from src.data.auto_results import infer_stage
-    r32_fixtures: dict[str, str] = {}
     for m in board:
         h, a = m["home"], m["away"]
-        if h not in CONFIG.teams or a not in CONFIG.teams:
-            continue
-        if infer_stage(m["kickoff"], h, a) == "R32":
-            r32_fixtures[h] = a
-            r32_fixtures[a] = h
+        if h in CONFIG.teams and a in CONFIG.teams \
+                and infer_stage(m["kickoff"], h, a) == "R32":
+            r32_fixtures[h], r32_fixtures[a] = a, h
+    for r in store.results:
+        if r.stage == "R32" and r.home in CONFIG.teams and r.away in CONFIG.teams:
+            r32_fixtures[r.home], r32_fixtures[r.away] = r.away, r.home
 
     # Rebuild the bracket from live standings + real R32 draw + decided
     # knockouts (cheap: 31 ensemble look-ups for the ties not settled yet).
