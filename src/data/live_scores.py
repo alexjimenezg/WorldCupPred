@@ -60,7 +60,7 @@ _STAGE_MAP = {
 def import_finished_to_store(*, store=None) -> int:
     """Pull finished WC matches into the results store. Returns number imported."""
     from src.results_store import ResultsStore
-    store = store or ResultsStore()
+    store = store if store is not None else ResultsStore()
     df = fetch_matches(status="FINISHED")
     if df.empty:
         return 0
