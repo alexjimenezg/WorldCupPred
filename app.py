@@ -999,12 +999,39 @@ def live_board():
     else:
         st.info("No match in play right now — auto-refreshing every minute. ⚽")
 
-    # nudge when a final result hasn't been folded into the odds yet
+    # auto-fold a final result into the odds the moment it shows up finished —
+    # recorded straight from the board in hand, so no second (flaky) ESPN fetch
     store_keys = {(frozenset((r.home, r.away))) for r in _store().results}
     missing = [m for m in done
                if frozenset((m["home"], m["away"])) not in store_keys
                and m["home"] in CONFIG.teams and m["away"] in CONFIG.teams]
-    if missing:
+    if missing and auto:
+        handled = st.session_state.setdefault("_autosynced_pairs", set())
+        fresh = [m for m in missing
+                 if frozenset((m["home"], m["away"])) not in handled]
+        if fresh:
+            # mark first so a match we can't record (odd stage/name) never loops
+            for m in fresh:
+                handled.add(frozenset((m["home"], m["away"])))
+            from src.data.espn_live import import_board_to_store
+            added = import_board_to_store(fresh, _store())
+            if added:
+                with st.spinner(f"{added} new result(s) in — refreshing the "
+                                "simulation…"):
+                    from src import update as upd
+                    upd.recompute(n_sims=int(sync_sims), regen_vault=False,
+                                  verbose=False)
+                load_predictor.clear()
+                st.toast(f"✅ {added} new result(s) auto-synced — odds refreshed.")
+                st.rerun(scope="app")
+        # whatever we still couldn't fold in, surface for a manual sync
+        leftover = [m for m in missing
+                    if frozenset((m["home"], m["away"])) not in
+                    {frozenset((r.home, r.away)) for r in _store().results}]
+        if leftover:
+            st.warning(f"{len(leftover)} finished match(es) couldn't be auto-synced "
+                       "— try **Sync results to-date** in the sidebar.")
+    elif missing:
         st.warning(f"{len(missing)} finished match(es) not yet in the odds — "
                    "sync from the sidebar to refresh the simulation.")
 
