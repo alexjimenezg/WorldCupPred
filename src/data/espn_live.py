@@ -152,14 +152,21 @@ def _parse_events(comp: dict, home_id: str, away_id: str) -> list[dict]:
     return sorted(out, key=lambda e: e["minute"])
 
 
-def import_finished_to_store(store=None) -> int:
-    """Upsert finished WC matches into the results store. Returns rows applied."""
+def import_board_to_store(board: list[dict], store=None) -> int:
+    """Upsert finished matches from an *already-fetched* board into the store.
+
+    Takes the parsed scoreboard the caller already has (e.g. the app's cached
+    live board) so no second network request is needed — this is what lets the
+    app fold a just-finished match into the odds the instant it shows up live,
+    even if a fresh ESPN fetch would be rate-limited or briefly unreachable.
+    Returns the number of results applied.
+    """
     from src.data.auto_results import infer_stage
     from src.results_store import ResultsStore
     store = store or ResultsStore()
     count = 0
-    for m in fetch_scoreboard():
-        if m["state"] != "post":
+    for m in board:
+        if m.get("state") != "post":
             continue
         home, away = m["home"], m["away"]
         if home not in CONFIG.teams or away not in CONFIG.teams:
@@ -169,11 +176,16 @@ def import_finished_to_store(store=None) -> int:
             continue
         try:
             store.add(home, away, m["home_score"], m["away_score"], stage=stage,
-                      on=str(m["kickoff"].date()))
+                      on=str(pd.Timestamp(m["kickoff"]).date()))
             count += 1
         except ValueError:
             continue
     return count
+
+
+def import_finished_to_store(store=None) -> int:
+    """Upsert finished WC matches into the results store. Returns rows applied."""
+    return import_board_to_store(fetch_scoreboard(), store)
 
 
 if __name__ == "__main__":

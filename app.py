@@ -248,13 +248,26 @@ header[data-testid="stHeader"] {{ background: transparent; }}
 .bk-rnd {{ text-align:center; color:var(--mut); font-size:.7rem; font-weight:700;
            letter-spacing:.08em; margin-bottom:.2rem; }}
 .bk-tie {{ background:var(--card); border:1px solid var(--line); border-radius:9px;
-           padding:.25rem .45rem; margin:.16rem 0; font-size:.75rem; }}
-.bk-tie .tm {{ display:flex; justify-content:space-between; gap:.3rem;
-               white-space:nowrap; }}
+           padding:.3rem .5rem .35rem; margin:.16rem 0; font-size:.76rem; }}
+.bk-tie .tm {{ display:flex; justify-content:space-between; align-items:center;
+               gap:.3rem; white-space:nowrap; line-height:1.45; }}
+.bk-tie .tm .nm {{ overflow:hidden; text-overflow:ellipsis; }}
 .bk-tie .tm.w {{ font-weight:700; }}
-.bk-tie .tm.l {{ color:#64748b; }}
-.bk-tie .pp {{ color:var(--mut); font-weight:400; }}
-.bk-id {{ color:#5b6a8c; font-size:.6rem; }}
+.bk-tie .tm.l {{ color:#7c89a6; }}
+.bk-tie .tm.l .nm {{ opacity:.85; }}
+.bk-tie .pp {{ color:var(--mut); font-weight:600; font-variant-numeric:tabular-nums;
+               font-size:.72rem; }}
+.bk-tie .tm.w .pp {{ color:var(--green); }}
+.bk-tie .sc {{ font-weight:800; font-variant-numeric:tabular-nums; font-size:.82rem;
+               min-width:1ch; text-align:right; }}
+.bk-tie .tm.w .sc {{ color:var(--green); }}
+/* two-tone win-probability bar (green = home/top, blue = away/bottom) */
+.bk-bar {{ display:flex; height:4px; border-radius:3px; overflow:hidden;
+           margin-top:.28rem; background:var(--line); }}
+.bk-bar .h {{ background:var(--green); }}
+.bk-bar .a {{ background:var(--blue); }}
+.bk-id {{ color:#5b6a8c; font-size:.6rem; display:flex; align-items:center;
+          gap:.25rem; margin-bottom:.05rem; }}
 .bk-champ {{ text-align:center; background:linear-gradient(135deg,#1d2a4d,var(--card));
              border:1px solid var(--green); border-radius:10px;
              padding:.5rem .4rem; margin-bottom:.5rem; }}
@@ -262,13 +275,14 @@ header[data-testid="stHeader"] {{ background: transparent; }}
 .bk-champ .s {{ color:var(--mut); font-size:.7rem; }}
 .bk-tie.live {{ border-color:var(--red);
                box-shadow:0 0 0 1px rgba(225,29,72,.35); }}
-.bk-tie.decided {{ border-color:var(--green); }}
+.bk-tie.decided {{ border-color:rgba(16,185,129,.55);
+                   background:linear-gradient(180deg,rgba(16,185,129,.07),var(--card)); }}
 .bk-live-badge {{ color:#fff; background:var(--red); border-radius:4px;
                   padding:.02rem .32rem; font-size:.55rem; font-weight:700;
-                  animation:lvpulse 1.6s infinite; margin-left:.28rem; }}
-.bk-score {{ text-align:center; font-weight:800; font-size:.8rem; margin:.1rem 0;
-             font-variant-numeric:tabular-nums; }}
-.bk-detail {{ color:var(--mut); font-size:.6rem; font-weight:400; margin-left:.25rem; }}
+                  animation:lvpulse 1.6s infinite; }}
+.bk-fin {{ color:var(--green); font-size:.55rem; font-weight:700;
+           border:1px solid rgba(16,185,129,.5); border-radius:4px; padding:0 .26rem; }}
+.bk-detail {{ color:#fda4af; font-size:.58rem; font-weight:600; }}
 
 /* ---- dream-team pitch ---- */
 .pitch {{
@@ -422,40 +436,104 @@ def group_standings(store, live_matches: list[dict] | None = None
     return out
 
 
-def most_likely_bracket(table: pd.DataFrame) -> list[tuple[int, str, str]]:
-    """Illustrative R32 line-up: rank each group by win_group, allocate the 8 most
-    probable thirds with the real FIFA slot table."""
+def most_likely_bracket(table: pd.DataFrame, standings: dict | None = None,
+                        fixtures: dict | None = None
+                        ) -> list[tuple[int, str, str]]:
+    """Illustrative R32 line-up. Rank each group by *actual* standings so far
+    (points, then goal difference, then goals for) with the simulation's
+    win_group probability as the final tiebreaker / fallback for matches that
+    haven't been played yet, then allocate the 8 best thirds with the real FIFA
+    slot table.
+
+    `standings`: optional per-group sorted DataFrames from `group_standings`
+    (live + recorded results folded in). When omitted the bracket is built from
+    the simulation alone (pre-tournament behaviour).
+    `fixtures`: optional team -> actual R32 opponent map (from the real draw on
+    the live board). Once the draw is published this OVERRIDES the modelled
+    third-place allocation — FIFA's official third-place slot table isn't the
+    min-cost matching we compute, so the only way to get the real pairings right
+    is to read them off the actual fixtures. The home slot (group winner/
+    runner-up) still anchors each tie to its bracket position."""
     from src.simulation import tournament_2026 as T
-    slot, thirds, third_p = {}, {}, {}
+    wg = table.set_index("team")["win_group"].to_dict()
+    r32 = table.set_index("team")["round32"].to_dict()
+    slot, thirds, third_key = {}, {}, {}
     for g, df in table.groupby("group"):
-        df = df.sort_values("win_group", ascending=False).reset_index(drop=True)
-        slot[f"1{g}"], slot[f"2{g}"] = df.loc[0, "team"], df.loc[1, "team"]
-        thirds[g], third_p[g] = df.loc[2, "team"], df.loc[2, "round32"]
-    qualifying = sorted(sorted(thirds, key=third_p.get, reverse=True)[:8])
+        if standings is not None and g in standings:
+            d = standings[g].copy()
+            d["wg"] = d["team"].map(wg).fillna(0.0)
+            d = d.sort_values(["Pts", "GD", "GF", "wg"], ascending=False
+                              ).reset_index(drop=True)
+            slot[f"1{g}"], slot[f"2{g}"] = d.loc[0, "team"], d.loc[1, "team"]
+            thirds[g] = d.loc[2, "team"]
+            t3 = d.loc[2]
+            third_key[g] = (int(t3["Pts"]), int(t3["GD"]), int(t3["GF"]),
+                            float(r32.get(t3["team"], 0.0)))
+        else:
+            d = df.sort_values("win_group", ascending=False).reset_index(drop=True)
+            slot[f"1{g}"], slot[f"2{g}"] = d.loc[0, "team"], d.loc[1, "team"]
+            thirds[g] = d.loc[2, "team"]
+            third_key[g] = (0, 0, 0, float(d.loc[2, "round32"]))
+    qualifying = sorted(sorted(thirds, key=third_key.get, reverse=True)[:8])
     alloc = T.allocate_thirds(qualifying)
+    fixtures = fixtures or {}
+    homes = {slot[hs] for _, hs, _ in T.BRACKET_R32}  # the 16 seeded home teams
+    # All-or-nothing: only swap in the real draw once it covers every seeded
+    # home (the draw is published atomically). A partial map would mix the real
+    # pairings with the model's allocation and could place a team in two ties.
+    use_draw = bool(fixtures) and homes.issubset(fixtures)
     ties = []
     for tie_id, hs, as_ in T.BRACKET_R32:
-        away = thirds[alloc[tie_id]] if as_ == "3" else slot[as_]
-        ties.append((tie_id, slot[hs], away))
+        home = slot[hs]
+        if use_draw:
+            away = fixtures[home]                  # real draw is the source of truth
+        else:
+            away = thirds[alloc[tie_id]] if as_ == "3" else slot[as_]
+        ties.append((tie_id, home, away))
     return ties
 
 
-def predicted_bracket(table: pd.DataFrame) -> dict[int, dict]:
+def predicted_bracket(table: pd.DataFrame, standings: dict | None = None,
+                      results: dict | None = None, fixtures: dict | None = None
+                      ) -> dict[int, dict]:
     """Play the modal bracket out with the ensemble: at every node the favorite
     advances. p = P(side wins the tie | the matchup happens), draws resolved by
-    the same conditional used for ET/penalties in the simulator."""
+    the same conditional used for ET/penalties in the simulator.
+
+    `standings`: optional live group tables so the R32 line-up reflects results
+    to date (see `most_likely_bracket`).
+    `results`: optional decided knockout outcomes keyed by frozenset({home, away})
+    -> {"score": (h, a), "winner": team|None}. A real result fixes that tie and
+    its winner advances, so an upset propagates through the rest of the bracket
+    instead of the model's prediction. A level score with no recorded shootout
+    winner (winner=None) keeps the model's survivor but shows the real score.
+    `fixtures`: optional team -> real R32 opponent map from the published draw
+    (see `most_likely_bracket`)."""
     from src.simulation import tournament_2026 as T
     mp = load_predictor(False)
+    results = results or {}
     games: dict[int, dict] = {}
     winners: dict[int, str] = {}
 
     def play(tid: int, home: str, away: str) -> None:
-        out = mp.predict(home, away, True)  # knockouts at neutral venues
-        p = out["p_home"] / (out["p_home"] + out["p_away"])
-        winners[tid] = home if p >= 0.5 else away
-        games[tid] = {"home": home, "away": away, "p": p, "winner": winners[tid]}
+        actual = results.get(frozenset({home, away}))
+        if actual is not None:
+            winner = actual.get("winner")
+            if winner not in (home, away):  # unknown shootout → model picks survivor
+                out = mp.predict(home, away, True)
+                pm = out["p_home"] / (out["p_home"] + out["p_away"])
+                winner = home if pm >= 0.5 else away
+            p = 1.0 if winner == home else 0.0
+            games[tid] = {"home": home, "away": away, "p": p, "winner": winner,
+                          "score": actual.get("score"), "decided": True}
+        else:
+            out = mp.predict(home, away, True)  # knockouts at neutral venues
+            p = out["p_home"] / (out["p_home"] + out["p_away"])
+            winner = home if p >= 0.5 else away
+            games[tid] = {"home": home, "away": away, "p": p, "winner": winner}
+        winners[tid] = winner
 
-    for tid, home, away in most_likely_bracket(table):
+    for tid, home, away in most_likely_bracket(table, standings, fixtures):
         play(tid, home, away)
     for bracket in (T.BRACKET_R16, T.BRACKET_QF, T.BRACKET_SF):
         for tid, s1, s2 in bracket:
@@ -541,29 +619,37 @@ def bracket_html(games: dict[int, dict], champ_prob: float,
         is_live = tid in live_tids
         is_decided = tid in decided_tids
         score = g.get("score")
+        ph = g["p"]  # home win probability
 
         rows = ""
-        for i, (team, p) in enumerate(((g["home"], g["p"]), (g["away"], 1 - g["p"]))):
+        for i, (team, p) in enumerate(((g["home"], ph), (g["away"], 1 - ph))):
             cls = "w" if team == g["winner"] else "l"
             if score is not None:
-                right = f'<span class="pp">{score[i]}</span>'
+                right = f'<span class="sc">{score[i]}</span>'
             else:
                 right = f'<span class="pp">{p*100:.0f}%</span>'
-            rows += (f'<div class="tm {cls}"><span>{flag(team)}</span>'
+            rows += (f'<div class="tm {cls}"><span class="nm">{flag(team)}</span>'
                      f'{right}</div>')
 
+        # win-probability bar (green = home, blue = away); hidden once the tie is
+        # decided — then the score and the highlighted winner tell the story.
+        bar = ""
+        if not is_decided:
+            bar = (f'<div class="bk-bar" title="{ph*100:.0f}% / {(1-ph)*100:.0f}%">'
+                   f'<div class="h" style="width:{ph*100:.1f}%"></div>'
+                   f'<div class="a" style="width:{(1-ph)*100:.1f}%"></div></div>')
+
         live_badge = '<span class="bk-live-badge">LIVE</span>' if is_live else ""
-        detail_span = (f'<span class="bk-detail">{g["detail"]}</span>'
-                       if is_live and g.get("detail") else "")
-        score_line = ""
-        if is_live and score is not None:
-            score_line = (f'<div class="bk-score">{score[0]}–{score[1]}'
-                          f'{detail_span}</div>')
+        tag = ""
+        if is_live and g.get("detail"):
+            tag = f'<span class="bk-detail">{g["detail"]}</span>'
+        elif is_decided:
+            tag = '<span class="bk-fin">FT</span>'
 
         extra_cls = " live" if is_live else (" decided" if is_decided else "")
         return (f'<div class="bk-tie{extra_cls}">'
-                f'<div class="bk-id">M{tid}{live_badge}</div>'
-                f'{score_line}{rows}</div>')
+                f'<div class="bk-id">M{tid}{live_badge}{tag}</div>'
+                f'{rows}{bar}</div>')
 
     cols = ""
     for label, tids in _BK_COLS:
@@ -973,12 +1059,39 @@ def live_board():
     else:
         st.info("No match in play right now — auto-refreshing every minute. ⚽")
 
-    # nudge when a final result hasn't been folded into the odds yet
+    # auto-fold a final result into the odds the moment it shows up finished —
+    # recorded straight from the board in hand, so no second (flaky) ESPN fetch
     store_keys = {(frozenset((r.home, r.away))) for r in _store().results}
     missing = [m for m in done
                if frozenset((m["home"], m["away"])) not in store_keys
                and m["home"] in CONFIG.teams and m["away"] in CONFIG.teams]
-    if missing:
+    if missing and auto:
+        handled = st.session_state.setdefault("_autosynced_pairs", set())
+        fresh = [m for m in missing
+                 if frozenset((m["home"], m["away"])) not in handled]
+        if fresh:
+            # mark first so a match we can't record (odd stage/name) never loops
+            for m in fresh:
+                handled.add(frozenset((m["home"], m["away"])))
+            from src.data.espn_live import import_board_to_store
+            added = import_board_to_store(fresh, _store())
+            if added:
+                with st.spinner(f"{added} new result(s) in — refreshing the "
+                                "simulation…"):
+                    from src import update as upd
+                    upd.recompute(n_sims=int(sync_sims), regen_vault=False,
+                                  verbose=False)
+                load_predictor.clear()
+                st.toast(f"✅ {added} new result(s) auto-synced — odds refreshed.")
+                st.rerun(scope="app")
+        # whatever we still couldn't fold in, surface for a manual sync
+        leftover = [m for m in missing
+                    if frozenset((m["home"], m["away"])) not in
+                    {frozenset((r.home, r.away)) for r in _store().results}]
+        if leftover:
+            st.warning(f"{len(leftover)} finished match(es) couldn't be auto-synced "
+                       "— try **Sync results to-date** in the sidebar.")
+    elif missing:
         st.warning(f"{len(missing)} finished match(es) not yet in the odds — "
                    "sync from the sidebar to refresh the simulation.")
 
@@ -1282,9 +1395,60 @@ def bracket_board(table: pd.DataFrame) -> None:
     """Bracket wallchart: auto-refreshes every 30s to fold in live/finished matches."""
     from src.models.inplay import conditional_outcome
 
-    sig = f"{_ODDS_PATH.stat().st_mtime if _ODDS_PATH.exists() else 0}"
-    # Deep-copy so we can mutate without poisoning the cache
-    games: dict[int, dict] = {k: dict(v) for k, v in predicted_bracket_cached(sig).items()}
+    if table is None:
+        st.info("No simulation yet.")
+        return
+
+    store = _store()
+
+    # Live in-play group matches → folded into the standings so the R32 line-up
+    # reflects results to date (mirrors the Groups tab).
+    try:
+        board = fetch_board()
+    except Exception:
+        board = []
+    live_group: list[dict] = [
+        m for m in board
+        if m["state"] == "in"
+        and m["home"] in CONFIG.teams and m["away"] in CONFIG.teams
+        and CONFIG.group_of(m["home"]) == CONFIG.group_of(m["away"])
+    ]
+    standings = group_standings(store, live_matches=live_group)
+
+    # Decided knockout results (authoritative) keyed by pairing — these FIX the
+    # tie so the actual winner, not the prediction, advances down the bracket.
+    # (Store stages are R32/R16/QF/SF/final — KNOCKOUT_STAGES, not the odds-table
+    # column names.) A level score has no recorded shootout winner.
+    from src.results_store import KNOCKOUT_STAGES
+    ko_results: dict[frozenset, dict] = {}
+    for r in store.results:
+        if r.stage not in KNOCKOUT_STAGES:
+            continue
+        if r.home_score > r.away_score:
+            winner = r.home
+        elif r.home_score < r.away_score:
+            winner = r.away
+        else:
+            winner = None  # decided on penalties — shootout winner unknown
+        ko_results[frozenset({r.home, r.away})] = {
+            "score": (r.home_score, r.away_score), "winner": winner}
+
+    # Real R32 pairings from the published draw (the board lists them as soon as
+    # the groups resolve). team -> opponent, both directions; overrides the
+    # modelled third-place allocation so e.g. a host's true R32 rival is right.
+    from src.data.auto_results import infer_stage
+    r32_fixtures: dict[str, str] = {}
+    for m in board:
+        h, a = m["home"], m["away"]
+        if h not in CONFIG.teams or a not in CONFIG.teams:
+            continue
+        if infer_stage(m["kickoff"], h, a) == "R32":
+            r32_fixtures[h] = a
+            r32_fixtures[a] = h
+
+    # Rebuild the bracket from live standings + real R32 draw + decided
+    # knockouts (cheap: 31 ensemble look-ups for the ties not settled yet).
+    games = predicted_bracket(table, standings, ko_results, r32_fixtures)
     if not games:
         st.info("No simulation yet.")
         return
@@ -1295,34 +1459,11 @@ def bracket_board(table: pd.DataFrame) -> None:
     }
 
     live_tids: set[int] = set()
-    decided_tids: set[int] = set()
+    decided_tids: set[int] = {tid for tid, g in games.items() if g.get("decided")}
 
-    # 1. Apply stored knockout results (authoritative, from the results_store)
-    knockout_stages = {"round32", "round16", "quarterfinal", "semifinal", "final"}
-    for r in _store().results:
-        if r.stage not in knockout_stages:
-            continue
-        tid = pair_to_tid.get(frozenset({r.home, r.away}))
-        if tid is None:
-            continue
-        if r.home_score > r.away_score:
-            winner, p = r.home, 1.0
-        elif r.home_score < r.away_score:
-            winner, p = r.away, 0.0
-        else:
-            # ET/penalties: keep predicted winner if score is level
-            winner = games[tid]["winner"]
-            p = 1.0 if winner == games[tid]["home"] else 0.0
-        games[tid].update({"winner": winner, "p": p,
-                           "score": (r.home_score, r.away_score), "decided": True})
-        decided_tids.add(tid)
-
-    # 2. Overlay live ESPN data (in-play conditional probability or finished score)
-    try:
-        board = fetch_board()
-    except Exception:
-        board = []
-
+    # Overlay live ESPN data for knockout ties: an in-play tie shows the live
+    # conditional probability; a finished tie not yet in the store shows its
+    # score. Ties already decided from the store are left as-is.
     mp = load_predictor(False)
     for m in board:
         if m["home"] not in CONFIG.teams or m["away"] not in CONFIG.teams:
@@ -1383,11 +1524,13 @@ with tab_bracket:
         st.info("No simulation yet.")
     else:
         st.subheader("The bracket, as the model predicts it")
-        st.caption("Modal wallchart: groups resolved by P(win group) with FIFA's official "
-                   "third-place slot allocation, then the ensemble's favorite advances at "
-                   "every node (percentages = win the tie if it happens, draws resolved "
-                   "by the ET/penalty model). Live knockout matches update probabilities "
-                   "every 30 s; green border = result confirmed. Swipe sideways on a phone.")
+        st.caption("Modal wallchart: each tie shows both sides' win probability "
+                   "(the green/blue bar) and the ensemble's favorite advances at every "
+                   "node. The R32 line-up re-shapes as group results come in, and once "
+                   "the official draw is published the real pairings are shown. A played "
+                   "knockout tie locks in the real winner (green border, FT) and advances "
+                   "them down the bracket; a live tie shows the in-play probability. "
+                   "Refreshes every 30 s — swipe sideways on a phone.")
         bracket_board(table)
 
         st.divider()

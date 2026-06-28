@@ -41,9 +41,16 @@ def infer_stage(date, home: str, away: str) -> str | None:
     if d.tzinfo is not None:  # ESPN kickoffs are tz-aware UTC; windows are naive
         d = d.tz_convert("UTC").tz_localize(None)
     group_end = pd.Timestamp(CONFIG.groups_raw["dates"]["group_stage_end"])
+    same_group = CONFIG.group_of(home) == CONFIG.group_of(away)
     if d <= group_end:
         # same-group pairing is the defining property; anything else is noise
-        return "group" if CONFIG.group_of(home) == CONFIG.group_of(away) else None
+        return "group" if same_group else None
+    # a same-group pairing on the day after the boundary is the last group
+    # matchday whose UTC kickoff spilled past midnight — still a group match,
+    # not an R32 tie (the R32 seeding never rematches group-mates, and knockout
+    # same-group meetings only happen far later).
+    if same_group and d.normalize() <= group_end.normalize() + pd.Timedelta(days=1):
+        return "group"
     for start, end, stage in _KO_WINDOWS:
         if pd.Timestamp(start) <= d <= pd.Timestamp(end):
             return stage
