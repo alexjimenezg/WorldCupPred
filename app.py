@@ -615,11 +615,56 @@ def predicted_bracket(table: pd.DataFrame, standings: dict | None = None,
     return games
 
 
-@st.cache_data(ttl=600, show_spinner=False)
-def predicted_bracket_cached(_sig: str) -> dict[int, dict]:
-    """Cached predicted bracket (busts when the odds table / results change)."""
-    t = load_table()
-    return predicted_bracket(t) if t is not None else {}
+def live_bracket_games(table: pd.DataFrame, board: list[dict] | None = None
+                       ) -> dict[int, dict]:
+    """The bracket as it really stands now — R32 line-up from the live group
+    standings + the published draw, with played knockout ties advancing the real
+    winner. Shared by the Bracket tab AND the Live tab's 'next up' projection so
+    the two never disagree (the projection used to read a stale model bracket)."""
+    from src.data.auto_results import infer_stage
+    from src.results_store import KNOCKOUT_STAGES
+    if table is None:
+        return {}
+    store = _store()
+    if board is None:
+        try:
+            board = fetch_board()
+        except Exception:
+            board = []
+
+    # complete group standings: store + martj42 results it's missing + live in-play
+    live_group = [m for m in board
+                  if m["state"] == "in"
+                  and m["home"] in CONFIG.teams and m["away"] in CONFIG.teams
+                  and CONFIG.group_of(m["home"]) == CONFIG.group_of(m["away"])]
+    recorded = {frozenset((r.home, r.away)) for r in store.results
+                if r.stage == "group"}
+    extra_group = [m for m in load_group_results()
+                   if frozenset((m["home"], m["away"])) not in recorded]
+    standings = group_standings(store, live_matches=extra_group + live_group)
+
+    # decided knockout results (winner advances; level score = unknown shootout)
+    ko_results: dict[frozenset, dict] = {}
+    for r in store.results:
+        if r.stage not in KNOCKOUT_STAGES:
+            continue
+        winner = (r.home if r.home_score > r.away_score
+                  else r.away if r.away_score > r.home_score else None)
+        ko_results[frozenset({r.home, r.away})] = {
+            "score": (r.home_score, r.away_score), "winner": winner}
+
+    # real R32 draw (martj42 + board + stored R32 results)
+    r32_fixtures: dict[str, str] = dict(load_draw().get("R32", {}))
+    for m in board:
+        h, a = m["home"], m["away"]
+        if h in CONFIG.teams and a in CONFIG.teams \
+                and infer_stage(m["kickoff"], h, a) == "R32":
+            r32_fixtures[h], r32_fixtures[a] = a, h
+    for r in store.results:
+        if r.stage == "R32" and r.home in CONFIG.teams and r.away in CONFIG.teams:
+            r32_fixtures[r.home], r32_fixtures[r.away] = r.away, r.home
+
+    return predicted_bracket(table, standings, ko_results, r32_fixtures)
 
 
 def _bracket_maps():
@@ -642,13 +687,14 @@ def _bracket_maps():
     return rnd, feeds
 
 
-def knockout_context(home: str, away: str, sig: str) -> dict | None:
+def knockout_context(home: str, away: str) -> dict | None:
     """For a knockout match, the projected next-round opponents of the winner.
 
-    Identifies the tie in the predicted bracket by its two teams (best-effort —
-    the projection may differ from reality), then reads the sibling feeder tie.
+    Built from the SAME live bracket as the Bracket tab (real draw + results), so
+    the 'winner advances to face…' line matches the wallchart. Identifies the tie
+    by its two teams, then reads the sibling feeder tie.
     """
-    games = predicted_bracket_cached(sig)
+    games = live_bracket_games(load_table())
     if not games:
         return None
     rnd, feeds = _bracket_maps()
@@ -940,8 +986,7 @@ def match_context(m: dict) -> None:
         st.markdown(_mini_group_html(g, _store(), live_list, {home, away}),
                     unsafe_allow_html=True)
     else:
-        sig = f"{_ODDS_PATH.stat().st_mtime if _ODDS_PATH.exists() else 0}"
-        ctx = knockout_context(home, away, sig)
+        ctx = knockout_context(home, away)
         if not ctx:
             st.caption("Bracket position for this tie isn't resolved yet.")
         elif ctx.get("final"):
@@ -1471,66 +1516,14 @@ def bracket_board(table: pd.DataFrame) -> None:
         st.info("No simulation yet.")
         return
 
-    store = _store()
-
-    # Live in-play group matches → folded into the standings so the R32 line-up
-    # reflects results to date (mirrors the Groups tab).
     try:
         board = fetch_board()
     except Exception:
         board = []
-    live_group: list[dict] = [
-        m for m in board
-        if m["state"] == "in"
-        and m["home"] in CONFIG.teams and m["away"] in CONFIG.teams
-        and CONFIG.group_of(m["home"]) == CONFIG.group_of(m["away"])
-    ]
-    # Complete the standings with martj42's group results the store hasn't folded
-    # in yet, so seeds/thirds rank correctly even if the store is a matchday
-    # behind (a wrong seed would anchor the real draw to the wrong tie).
-    recorded = {frozenset((r.home, r.away)) for r in store.results
-                if r.stage == "group"}
-    extra_group = [m for m in load_group_results()
-                   if frozenset((m["home"], m["away"])) not in recorded]
-    standings = group_standings(store, live_matches=extra_group + live_group)
 
-    # Decided knockout results (authoritative) keyed by pairing — these FIX the
-    # tie so the actual winner, not the prediction, advances down the bracket.
-    # (Store stages are R32/R16/QF/SF/final — KNOCKOUT_STAGES, not the odds-table
-    # column names.) A level score has no recorded shootout winner.
-    from src.results_store import KNOCKOUT_STAGES
-    ko_results: dict[frozenset, dict] = {}
-    for r in store.results:
-        if r.stage not in KNOCKOUT_STAGES:
-            continue
-        if r.home_score > r.away_score:
-            winner = r.home
-        elif r.home_score < r.away_score:
-            winner = r.away
-        else:
-            winner = None  # decided on penalties — shootout winner unknown
-        ko_results[frozenset({r.home, r.away})] = {
-            "score": (r.home_score, r.away_score), "winner": winner}
-
-    # Real R32 pairings (team -> opponent, both directions) override the modelled
-    # third-place allocation so e.g. a host's true R32 rival is right. Primary
-    # source is the published draw from martj42 (it lists the scheduled ties with
-    # blank scores the moment the groups resolve); the live board and any stored
-    # R32 results top it up.
-    r32_fixtures: dict[str, str] = dict(load_draw().get("R32", {}))
-    from src.data.auto_results import infer_stage
-    for m in board:
-        h, a = m["home"], m["away"]
-        if h in CONFIG.teams and a in CONFIG.teams \
-                and infer_stage(m["kickoff"], h, a) == "R32":
-            r32_fixtures[h], r32_fixtures[a] = a, h
-    for r in store.results:
-        if r.stage == "R32" and r.home in CONFIG.teams and r.away in CONFIG.teams:
-            r32_fixtures[r.home], r32_fixtures[r.away] = r.away, r.home
-
-    # Rebuild the bracket from live standings + real R32 draw + decided
-    # knockouts (cheap: 31 ensemble look-ups for the ties not settled yet).
-    games = predicted_bracket(table, standings, ko_results, r32_fixtures)
+    # The bracket as it really stands (real draw + live standings + results) —
+    # the same builder the Live tab's "next up" projection uses, so they agree.
+    games = live_bracket_games(table, board)
     if not games:
         st.info("No simulation yet.")
         return
