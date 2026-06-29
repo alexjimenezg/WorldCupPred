@@ -385,7 +385,10 @@ def load_draw() -> dict[str, dict[str, str]]:
     fetch error (the bracket then falls back to the modelled allocation)."""
     try:
         from src.data.auto_results import knockout_fixtures
-        return knockout_fixtures(force=False)
+        # force=True: re-download the schedule so a stale container CSV (cached
+        # before the draw was published) can't hide the real pairings. The 10-min
+        # st.cache_data ttl keeps this to ~6 fetches/hour.
+        return knockout_fixtures(force=True)
     except Exception:
         return {}
 
@@ -397,7 +400,7 @@ def load_group_results() -> list[dict]:
     the results store is a matchday behind. Empty on any fetch error."""
     try:
         from src.data.auto_results import fetch_wc2026_results, infer_stage
-        wc = fetch_wc2026_results(force=False)
+        wc = fetch_wc2026_results(force=True)  # always fresh; see load_draw note
         out = []
         for _, m in wc.iterrows():
             h, a = CONFIG.normalize(str(m["home_team"])), CONFIG.normalize(str(m["away_team"]))
@@ -1583,6 +1586,17 @@ def bracket_board(table: pd.DataFrame) -> None:
 
     champ = games[104]["winner"]
     champ_prob = float(table.set_index("team").loc[champ, "champion"])
+
+    # Source badge so it's unambiguous whether the real bracket is in play.
+    n_draw = len(load_draw().get("R32", {})) // 2
+    if n_draw >= 16:
+        st.caption(f"🟢 **R32: official draw** — all 16 ties from the published "
+                   "bracket. Later rounds are the model's projection until played.")
+    elif n_draw > 0:
+        st.caption(f"🟡 R32: {n_draw}/16 ties from the official draw so far; the "
+                   "rest are the model's projection.")
+    else:
+        st.caption("🔵 R32: model projection (official draw not available yet).")
 
     if live_tids:
         st.markdown(
