@@ -86,6 +86,14 @@ def recompute(*, retrain_ml: bool = False, with_dl: bool = False,
               regen_vault: bool = True, verbose: bool = True) -> pd.DataFrame:
     """Refit the base models on augmented data and re-simulate from now."""
     store = ResultsStore()
+    # make sure penalty-shootout winners are recorded before we build `fixed`,
+    # whichever source added the tie — otherwise the sim re-randomizes it.
+    try:
+        from src.data.auto_results import import_shootouts_to_store
+        import_shootouts_to_store(store, force=False)
+    except Exception as exc:  # network hiccup — proceed with what we have
+        if verbose:
+            print(f"  (shootout reconcile skipped: {exc})")
     matches = augmented_matches(store)
     if verbose:
         print(f"refitting on {len(matches):,} matches "
@@ -94,7 +102,13 @@ def recompute(*, retrain_ml: bool = False, with_dl: bool = False,
     ml = refit_ml(elo) if retrain_ml else None
     predictor = MatchPredictor.load_default(with_ml=True, with_dl=with_dl,
                                             ml=ml, dl=None)
-    table = run_simulation(predictor, n=n_sims, seed=seed, fixed=store.to_fixed(),
+    fixed = store.to_fixed()
+    try:  # pin R32 pairings to the published draw so fixed results land right
+        from src.data.auto_results import knockout_fixtures
+        fixed["r32_draw"] = knockout_fixtures(force=False).get("R32", {})
+    except Exception:
+        fixed["r32_draw"] = {}
+    table = run_simulation(predictor, n=n_sims, seed=seed, fixed=fixed,
                            progress=verbose)
     if regen_vault:
         _regen_vault(table, store)
