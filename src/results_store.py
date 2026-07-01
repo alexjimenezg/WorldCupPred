@@ -11,7 +11,8 @@ exposed two ways:
 from __future__ import annotations
 
 import json
-from dataclasses import asdict, dataclass
+import os
+from dataclasses import asdict, dataclass, fields
 from datetime import date
 from pathlib import Path
 
@@ -42,14 +43,29 @@ class ResultsStore:
 
     # ---- persistence --------------------------------------------------------
     def load(self) -> "ResultsStore":
-        if self.path.exists():
+        """Load results, tolerating schema drift and half-written files. Only
+        keys the Result dataclass knows are kept (so a JSON written by a newer
+        build can't crash an older one, and vice-versa via defaults), and a
+        corrupt/partial read starts empty rather than raising — the next sync
+        repopulates it."""
+        if not self.path.exists():
+            return self
+        try:
             raw = json.loads(self.path.read_text(encoding="utf-8"))
-            self.results = [Result(**r) for r in raw]
+        except (ValueError, OSError):
+            return self
+        allowed = {f.name for f in fields(Result)}
+        self.results = [Result(**{k: v for k, v in r.items() if k in allowed})
+                        for r in raw if isinstance(r, dict)]
         return self
 
     def save(self) -> None:
-        self.path.write_text(json.dumps([asdict(r) for r in self.results], indent=2),
-                             encoding="utf-8")
+        # atomic write: Streamlit fragments can sync concurrently, and a reader
+        # hitting a half-written file must not crash the app.
+        data = json.dumps([asdict(r) for r in self.results], indent=2)
+        tmp = self.path.with_name(self.path.name + f".{os.getpid()}.tmp")
+        tmp.write_text(data, encoding="utf-8")
+        os.replace(tmp, self.path)
 
     # ---- mutation -----------------------------------------------------------
     def add(self, home: str, away: str, home_score: int, away_score: int,
