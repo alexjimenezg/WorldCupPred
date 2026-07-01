@@ -597,7 +597,8 @@ def predicted_bracket(table: pd.DataFrame, standings: dict | None = None,
                 winner = home if pm >= 0.5 else away
             p = 1.0 if winner == home else 0.0
             games[tid] = {"home": home, "away": away, "p": p, "winner": winner,
-                          "score": actual.get("score"), "decided": True}
+                          "score": actual.get("score"), "decided": True,
+                          "pens": actual.get("pens", False)}
         else:
             out = mp.predict(home, away, True)  # knockouts at neutral venues
             p = out["p_home"] / (out["p_home"] + out["p_away"])
@@ -622,7 +623,7 @@ def live_bracket_games(table: pd.DataFrame, board: list[dict] | None = None
     winner. Shared by the Bracket tab AND the Live tab's 'next up' projection so
     the two never disagree (the projection used to read a stale model bracket)."""
     from src.data.auto_results import infer_stage
-    from src.results_store import KNOCKOUT_STAGES
+    from src.results_store import KNOCKOUT_STAGES, ResultsStore
     if table is None:
         return {}
     store = _store()
@@ -643,15 +644,16 @@ def live_bracket_games(table: pd.DataFrame, board: list[dict] | None = None
                    if frozenset((m["home"], m["away"])) not in recorded]
     standings = group_standings(store, live_matches=extra_group + live_group)
 
-    # decided knockout results (winner advances; level score = unknown shootout)
+    # decided knockout results — winner advances (the recorded shootout winner
+    # when the tie was level), so a penalty loser is out on the wallchart too.
     ko_results: dict[frozenset, dict] = {}
     for r in store.results:
         if r.stage not in KNOCKOUT_STAGES:
             continue
-        winner = (r.home if r.home_score > r.away_score
-                  else r.away if r.away_score > r.home_score else None)
+        pens = r.home_score == r.away_score and bool(r.winner)
         ko_results[frozenset({r.home, r.away})] = {
-            "score": (r.home_score, r.away_score), "winner": winner}
+            "score": (r.home_score, r.away_score),
+            "winner": ResultsStore.result_winner(r), "pens": pens}
 
     # real R32 draw (martj42 + board + stored R32 results)
     r32_fixtures: dict[str, str] = dict(load_draw().get("R32", {}))
@@ -762,7 +764,8 @@ def bracket_html(games: dict[int, dict], champ_prob: float,
         if is_live and g.get("detail"):
             tag = f'<span class="bk-detail">{g["detail"]}</span>'
         elif is_decided:
-            tag = '<span class="bk-fin">FT</span>'
+            tag = ('<span class="bk-fin">FT&nbsp;pens</span>' if g.get("pens")
+                   else '<span class="bk-fin">FT</span>')
 
         extra_cls = " live" if is_live else (" decided" if is_decided else "")
         return (f'<div class="bk-tie{extra_cls}">'
@@ -1414,8 +1417,14 @@ with tab_odds:
                 st.plotly_chart(_plot(fig, 300), width='stretch')
 
         st.subheader("Full stage probabilities")
+        elim = _store().eliminated()
+        if elim:
+            st.caption(f"❌ **{len(elim)} team(s) eliminated** and shown at 0% "
+                       "(they reached only the round they went out in): "
+                       + ", ".join(flag(t) for t in sorted(elim)) + ".")
         disp = table.copy()
-        disp["team"] = disp["team"].map(flag)
+        disp["team"] = disp["team"].map(
+            lambda t: ("❌ " + flag(t)) if t in elim else flag(t))
         for col in _STAGE_COLS:
             disp[col] = disp[col] * 100
         st.dataframe(

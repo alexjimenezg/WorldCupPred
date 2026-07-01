@@ -5,7 +5,8 @@
     "home_score": 2,
     "away_score": 0,
     "stage": "group",
-    "date": "2026-06-11"
+    "date": "2026-06-11",
+    "winner": ""
   },
   {
     "home": "South Korea",
@@ -13,7 +14,8 @@
     "home_score": 2,
     "away_score": 1,
     "stage": "group",
-    "date": "2026-06-11"
+    "date": "2026-06-11",
+    "winner": ""
   },
   {
     "home": "Canada",
@@ -21,7 +23,8 @@
     "home_score": 1,
     "away_score": 1,
     "stage": "group",
-    "date": "2026-06-12"
+    "date": "2026-06-12",
+    "winner": ""
   },
   {
     "home": "United States",
@@ -29,6 +32,682 @@
     "home_score": 4,
     "away_score": 1,
     "stage": "group",
-    "date": "2026-06-12"
+    "date": "2026-06-12",
+    "winner": ""
+  },
+  {
+    "home": "Qatar",
+    "away": "Switzerland",
+    "home_score": 1,
+    "away_score": 1,
+    "stage": "group",
+    "date": "2026-06-13",
+    "winner": ""
+  },
+  {
+    "home": "Brazil",
+    "away": "Morocco",
+    "home_score": 1,
+    "away_score": 1,
+    "stage": "group",
+    "date": "2026-06-13",
+    "winner": ""
+  },
+  {
+    "home": "Haiti",
+    "away": "Scotland",
+    "home_score": 0,
+    "away_score": 1,
+    "stage": "group",
+    "date": "2026-06-13",
+    "winner": ""
+  },
+  {
+    "home": "Australia",
+    "away": "Turkey",
+    "home_score": 2,
+    "away_score": 0,
+    "stage": "group",
+    "date": "2026-06-13",
+    "winner": ""
+  },
+  {
+    "home": "Germany",
+    "away": "Curacao",
+    "home_score": 7,
+    "away_score": 1,
+    "stage": "group",
+    "date": "2026-06-14",
+    "winner": ""
+  },
+  {
+    "home": "Ivory Coast",
+    "away": "Ecuador",
+    "home_score": 1,
+    "away_score": 0,
+    "stage": "group",
+    "date": "2026-06-14",
+    "winner": ""
+  },
+  {
+    "home": "Netherlands",
+    "away": "Japan",
+    "home_score": 2,
+    "away_score": 2,
+    "stage": "group",
+    "date": "2026-06-14",
+    "winner": ""
+  },
+  {
+    "home": "Sweden",
+    "away": "Tunisia",
+    "home_score": 5,
+    "away_score": 1,
+    "stage": "group",
+    "date": "2026-06-14",
+    "winner": ""
+  },
+  {
+    "home": "Belgium",
+    "away": "Egypt",
+    "home_score": 1,
+    "away_score": 1,
+    "stage": "group",
+    "date": "2026-06-15",
+    "winner": ""
+  },
+  {
+    "home": "Iran",
+    "away": "New Zealand",
+    "home_score": 2,
+    "away_score": 2,
+    "stage": "group",
+    "date": "2026-06-15",
+    "winner": ""
+  },
+  {
+    "home": "Spain",
+    "away": "Cape Verde",
+    "home_score": 0,
+    "away_score": 0,
+    "stage": "group",
+    "date": "2026-06-15",
+    "winner": ""
+  },
+  {
+    "home": "Saudi Arabia",
+    "away": "Uruguay",
+    "home_score": 1,
+    "away_score": 1,
+    "stage": "group",
+    "date": "2026-06-15",
+    "winner": ""
+  },
+  {
+    "home": "France",
+    "away": "Senegal",
+    "home_score": 3,
+    "away_score": 1,
+    "stage": "group",
+    "date": "2026-06-16",
+    "winner": ""
+  },
+  {
+    "home": "Iraq",
+    "away": "Norway",
+    "home_score": 1,
+    "away_score": 4,
+    "stage": "group",
+    "date": "2026-06-16",
+    "winner": ""
+  },
+  {
+    "home": "Argentina",
+    "away": "Algeria",
+    "home_score": 3,
+    "away_score": 0,
+    "stage": "group",
+    "date": "2026-06-16",
+    "winner": ""
+  },
+  {
+    "home": "Austria",
+    "away": "Jordan",
+    "home_score": 3,
+    "away_score": 1,
+    "stage": "group",
+    "date": "2026-06-16",
+    "winner": ""
+  },
+  {
+    "home": "Portugal",
+    "away": "DR Congo",
+    "home_score": 1,
+    "away_score": 1,
+    "stage": "group",
+    "date": "2026-06-17",
+    "winner": ""
+  },
+  {
+    "home": "Uzbekistan",
+    "away": "Colombia",
+    "home_score": 1,
+    "away_score": 3,
+    "stage": "group",
+    "date": "2026-06-17",
+    "winner": ""
+  },
+  {
+    "home": "England",
+    "away": "Croatia",
+    "home_score": 4,
+    "away_score": 2,
+    "stage": "group",
+    "date": "2026-06-17",
+    "winner": ""
+  },
+  {
+    "home": "Ghana",
+    "away": "Panama",
+    "home_score": 1,
+    "away_score": 0,
+    "stage": "group",
+    "date": "2026-06-17",
+    "winner": ""
+  },
+  {
+    "home": "Czech Republic",
+    "away": "South Africa",
+    "home_score": 1,
+    "away_score": 1,
+    "stage": "group",
+    "date": "2026-06-18",
+    "winner": ""
+  },
+  {
+    "home": "Mexico",
+    "away": "South Korea",
+    "home_score": 1,
+    "away_score": 0,
+    "stage": "group",
+    "date": "2026-06-18",
+    "winner": ""
+  },
+  {
+    "home": "Switzerland",
+    "away": "Bosnia and Herzegovina",
+    "home_score": 4,
+    "away_score": 1,
+    "stage": "group",
+    "date": "2026-06-18",
+    "winner": ""
+  },
+  {
+    "home": "Canada",
+    "away": "Qatar",
+    "home_score": 6,
+    "away_score": 0,
+    "stage": "group",
+    "date": "2026-06-18",
+    "winner": ""
+  },
+  {
+    "home": "Scotland",
+    "away": "Morocco",
+    "home_score": 0,
+    "away_score": 1,
+    "stage": "group",
+    "date": "2026-06-19",
+    "winner": ""
+  },
+  {
+    "home": "Brazil",
+    "away": "Haiti",
+    "home_score": 3,
+    "away_score": 0,
+    "stage": "group",
+    "date": "2026-06-19",
+    "winner": ""
+  },
+  {
+    "home": "United States",
+    "away": "Australia",
+    "home_score": 2,
+    "away_score": 0,
+    "stage": "group",
+    "date": "2026-06-19",
+    "winner": ""
+  },
+  {
+    "home": "Turkey",
+    "away": "Paraguay",
+    "home_score": 0,
+    "away_score": 1,
+    "stage": "group",
+    "date": "2026-06-19",
+    "winner": ""
+  },
+  {
+    "home": "Germany",
+    "away": "Ivory Coast",
+    "home_score": 2,
+    "away_score": 1,
+    "stage": "group",
+    "date": "2026-06-20",
+    "winner": ""
+  },
+  {
+    "home": "Ecuador",
+    "away": "Curacao",
+    "home_score": 0,
+    "away_score": 0,
+    "stage": "group",
+    "date": "2026-06-20",
+    "winner": ""
+  },
+  {
+    "home": "Netherlands",
+    "away": "Sweden",
+    "home_score": 5,
+    "away_score": 1,
+    "stage": "group",
+    "date": "2026-06-20",
+    "winner": ""
+  },
+  {
+    "home": "Tunisia",
+    "away": "Japan",
+    "home_score": 0,
+    "away_score": 4,
+    "stage": "group",
+    "date": "2026-06-20",
+    "winner": ""
+  },
+  {
+    "home": "Belgium",
+    "away": "Iran",
+    "home_score": 0,
+    "away_score": 0,
+    "stage": "group",
+    "date": "2026-06-21",
+    "winner": ""
+  },
+  {
+    "home": "New Zealand",
+    "away": "Egypt",
+    "home_score": 1,
+    "away_score": 3,
+    "stage": "group",
+    "date": "2026-06-21",
+    "winner": ""
+  },
+  {
+    "home": "Spain",
+    "away": "Saudi Arabia",
+    "home_score": 4,
+    "away_score": 0,
+    "stage": "group",
+    "date": "2026-06-21",
+    "winner": ""
+  },
+  {
+    "home": "Uruguay",
+    "away": "Cape Verde",
+    "home_score": 2,
+    "away_score": 2,
+    "stage": "group",
+    "date": "2026-06-21",
+    "winner": ""
+  },
+  {
+    "home": "France",
+    "away": "Iraq",
+    "home_score": 3,
+    "away_score": 0,
+    "stage": "group",
+    "date": "2026-06-22",
+    "winner": ""
+  },
+  {
+    "home": "Norway",
+    "away": "Senegal",
+    "home_score": 3,
+    "away_score": 2,
+    "stage": "group",
+    "date": "2026-06-22",
+    "winner": ""
+  },
+  {
+    "home": "Argentina",
+    "away": "Austria",
+    "home_score": 2,
+    "away_score": 0,
+    "stage": "group",
+    "date": "2026-06-22",
+    "winner": ""
+  },
+  {
+    "home": "Jordan",
+    "away": "Algeria",
+    "home_score": 1,
+    "away_score": 2,
+    "stage": "group",
+    "date": "2026-06-22",
+    "winner": ""
+  },
+  {
+    "home": "Portugal",
+    "away": "Uzbekistan",
+    "home_score": 5,
+    "away_score": 0,
+    "stage": "group",
+    "date": "2026-06-23",
+    "winner": ""
+  },
+  {
+    "home": "Colombia",
+    "away": "DR Congo",
+    "home_score": 1,
+    "away_score": 0,
+    "stage": "group",
+    "date": "2026-06-23",
+    "winner": ""
+  },
+  {
+    "home": "England",
+    "away": "Ghana",
+    "home_score": 0,
+    "away_score": 0,
+    "stage": "group",
+    "date": "2026-06-23",
+    "winner": ""
+  },
+  {
+    "home": "Panama",
+    "away": "Croatia",
+    "home_score": 0,
+    "away_score": 1,
+    "stage": "group",
+    "date": "2026-06-23",
+    "winner": ""
+  },
+  {
+    "home": "Mexico",
+    "away": "Czech Republic",
+    "home_score": 3,
+    "away_score": 0,
+    "stage": "group",
+    "date": "2026-06-24",
+    "winner": ""
+  },
+  {
+    "home": "South Africa",
+    "away": "South Korea",
+    "home_score": 1,
+    "away_score": 0,
+    "stage": "group",
+    "date": "2026-06-24",
+    "winner": ""
+  },
+  {
+    "home": "Canada",
+    "away": "Switzerland",
+    "home_score": 1,
+    "away_score": 2,
+    "stage": "group",
+    "date": "2026-06-24",
+    "winner": ""
+  },
+  {
+    "home": "Bosnia and Herzegovina",
+    "away": "Qatar",
+    "home_score": 3,
+    "away_score": 1,
+    "stage": "group",
+    "date": "2026-06-24",
+    "winner": ""
+  },
+  {
+    "home": "Scotland",
+    "away": "Brazil",
+    "home_score": 0,
+    "away_score": 3,
+    "stage": "group",
+    "date": "2026-06-24",
+    "winner": ""
+  },
+  {
+    "home": "Morocco",
+    "away": "Haiti",
+    "home_score": 4,
+    "away_score": 2,
+    "stage": "group",
+    "date": "2026-06-24",
+    "winner": ""
+  },
+  {
+    "home": "United States",
+    "away": "Turkey",
+    "home_score": 2,
+    "away_score": 3,
+    "stage": "group",
+    "date": "2026-06-25",
+    "winner": ""
+  },
+  {
+    "home": "Paraguay",
+    "away": "Australia",
+    "home_score": 0,
+    "away_score": 0,
+    "stage": "group",
+    "date": "2026-06-25",
+    "winner": ""
+  },
+  {
+    "home": "Curacao",
+    "away": "Ivory Coast",
+    "home_score": 0,
+    "away_score": 2,
+    "stage": "group",
+    "date": "2026-06-25",
+    "winner": ""
+  },
+  {
+    "home": "Ecuador",
+    "away": "Germany",
+    "home_score": 2,
+    "away_score": 1,
+    "stage": "group",
+    "date": "2026-06-25",
+    "winner": ""
+  },
+  {
+    "home": "Japan",
+    "away": "Sweden",
+    "home_score": 1,
+    "away_score": 1,
+    "stage": "group",
+    "date": "2026-06-25",
+    "winner": ""
+  },
+  {
+    "home": "Tunisia",
+    "away": "Netherlands",
+    "home_score": 1,
+    "away_score": 3,
+    "stage": "group",
+    "date": "2026-06-25",
+    "winner": ""
+  },
+  {
+    "home": "Egypt",
+    "away": "Iran",
+    "home_score": 1,
+    "away_score": 1,
+    "stage": "group",
+    "date": "2026-06-26",
+    "winner": ""
+  },
+  {
+    "home": "New Zealand",
+    "away": "Belgium",
+    "home_score": 1,
+    "away_score": 5,
+    "stage": "group",
+    "date": "2026-06-26",
+    "winner": ""
+  },
+  {
+    "home": "Cape Verde",
+    "away": "Saudi Arabia",
+    "home_score": 0,
+    "away_score": 0,
+    "stage": "group",
+    "date": "2026-06-26",
+    "winner": ""
+  },
+  {
+    "home": "Uruguay",
+    "away": "Spain",
+    "home_score": 0,
+    "away_score": 1,
+    "stage": "group",
+    "date": "2026-06-26",
+    "winner": ""
+  },
+  {
+    "home": "Norway",
+    "away": "France",
+    "home_score": 1,
+    "away_score": 4,
+    "stage": "group",
+    "date": "2026-06-26",
+    "winner": ""
+  },
+  {
+    "home": "Senegal",
+    "away": "Iraq",
+    "home_score": 5,
+    "away_score": 0,
+    "stage": "group",
+    "date": "2026-06-26",
+    "winner": ""
+  },
+  {
+    "home": "Algeria",
+    "away": "Austria",
+    "home_score": 3,
+    "away_score": 3,
+    "stage": "group",
+    "date": "2026-06-27",
+    "winner": ""
+  },
+  {
+    "home": "Jordan",
+    "away": "Argentina",
+    "home_score": 1,
+    "away_score": 3,
+    "stage": "group",
+    "date": "2026-06-27",
+    "winner": ""
+  },
+  {
+    "home": "Colombia",
+    "away": "Portugal",
+    "home_score": 0,
+    "away_score": 0,
+    "stage": "group",
+    "date": "2026-06-27",
+    "winner": ""
+  },
+  {
+    "home": "DR Congo",
+    "away": "Uzbekistan",
+    "home_score": 3,
+    "away_score": 1,
+    "stage": "group",
+    "date": "2026-06-27",
+    "winner": ""
+  },
+  {
+    "home": "Panama",
+    "away": "England",
+    "home_score": 0,
+    "away_score": 2,
+    "stage": "group",
+    "date": "2026-06-27",
+    "winner": ""
+  },
+  {
+    "home": "Croatia",
+    "away": "Ghana",
+    "home_score": 2,
+    "away_score": 1,
+    "stage": "group",
+    "date": "2026-06-27",
+    "winner": ""
+  },
+  {
+    "home": "South Africa",
+    "away": "Canada",
+    "home_score": 0,
+    "away_score": 1,
+    "stage": "R32",
+    "date": "2026-06-28",
+    "winner": ""
+  },
+  {
+    "home": "Brazil",
+    "away": "Japan",
+    "home_score": 2,
+    "away_score": 1,
+    "stage": "R32",
+    "date": "2026-06-29",
+    "winner": ""
+  },
+  {
+    "home": "Ivory Coast",
+    "away": "Norway",
+    "home_score": 1,
+    "away_score": 2,
+    "stage": "R32",
+    "date": "2026-06-30",
+    "winner": ""
+  },
+  {
+    "home": "France",
+    "away": "Sweden",
+    "home_score": 3,
+    "away_score": 0,
+    "stage": "R32",
+    "date": "2026-06-30",
+    "winner": ""
+  },
+  {
+    "home": "Mexico",
+    "away": "Ecuador",
+    "home_score": 2,
+    "away_score": 0,
+    "stage": "R32",
+    "date": "2026-06-30",
+    "winner": ""
+  },
+  {
+    "home": "Germany",
+    "away": "Paraguay",
+    "home_score": 1,
+    "away_score": 1,
+    "stage": "R32",
+    "date": "2026-06-29",
+    "winner": "Paraguay"
+  },
+  {
+    "home": "Netherlands",
+    "away": "Morocco",
+    "home_score": 1,
+    "away_score": 1,
+    "stage": "R32",
+    "date": "2026-06-29",
+    "winner": "Morocco"
   }
 ]

@@ -184,7 +184,14 @@ def select_best_thirds(thirds: dict[str, str], stats: dict[str, TeamRow]
 # Knockouts
 # ---------------------------------------------------------------------------
 def _play_knockout(home: str, away: str, sampler: Sampler, rng: np.random.Generator,
-                   fixed_ko: dict | None = None) -> str:
+                   fixed_ko: dict | None = None,
+                   ko_winners: dict | None = None) -> str:
+    # a recorded winner (decisive OR penalty shootout) always advances — never
+    # re-randomize a tie whose real outcome we already know
+    if ko_winners:
+        w = ko_winners.get(frozenset((home, away)))
+        if w in (home, away):
+            return w
     neutral = True  # knockouts at neutral venues
     got = _pair_lookup(fixed_ko, home, away)
     hg, ag = got if got is not None else sampler.sample_score(home, away, neutral)
@@ -211,6 +218,8 @@ def simulate_tournament(sampler: Sampler, rng: np.random.Generator,
     fixed = fixed or {}
     fixed_groups = fixed.get("groups")
     fixed_ko = fixed.get("knockouts", {})
+    ko_winners = fixed.get("ko_winners", {})
+    r32_draw = fixed.get("r32_draw", {})  # team -> real R32 opponent (published draw)
 
     reached: dict[str, str] = {t: "group" for t in CONFIG.teams}
     standings: dict[str, list[str]] = {}
@@ -234,36 +243,50 @@ def simulate_tournament(sampler: Sampler, rng: np.random.Generator,
     for tie_id, g in slot_to_group.items():
         slot_team[f"3@{tie_id}"] = thirds[g]
 
+    # Once the real draw is known, pin each third-place opponent to the tie the
+    # published bracket puts it in (our min-cost allocation can differ from FIFA's
+    # official table). Only touches the eight "3" slots; a real third is never a
+    # seed. This makes fixed R32 results land on the right tie so an eliminated
+    # team (e.g. a shootout loser) is actually removed instead of re-randomized.
+    if r32_draw:
+        seeds = {slot_team[s] for s in slot_team if s[0] in "12"}
+        for tie_id, hs, as_ in BRACKET_R32:
+            if as_ == "3":
+                opp = r32_draw.get(slot_team[hs])
+                if opp and opp not in seeds:
+                    slot_team[f"3@{tie_id}"] = opp
+
     # Round of 32
     winners: dict[int, str] = {}
     for tie_id, hs, as_ in BRACKET_R32:
         home = slot_team[hs]
         away = slot_team[as_] if as_ != "3" else slot_team[f"3@{tie_id}"]
-        w = _play_knockout(home, away, sampler, rng, fixed_ko)
+        w = _play_knockout(home, away, sampler, rng, fixed_ko, ko_winners)
         winners[tie_id] = w
         for t in (home, away):
             reached[t] = "R32"
         reached[w] = "R16"
 
-    winners = _run_round(BRACKET_R16, winners, slot_team, sampler, rng, fixed_ko, reached, "QF")
-    winners = _run_round(BRACKET_QF, winners, slot_team, sampler, rng, fixed_ko, reached, "SF")
-    winners = _run_round(BRACKET_SF, winners, slot_team, sampler, rng, fixed_ko, reached, "final")
+    winners = _run_round(BRACKET_R16, winners, slot_team, sampler, rng, fixed_ko, reached, "QF", ko_winners)
+    winners = _run_round(BRACKET_QF, winners, slot_team, sampler, rng, fixed_ko, reached, "SF", ko_winners)
+    winners = _run_round(BRACKET_SF, winners, slot_team, sampler, rng, fixed_ko, reached, "final", ko_winners)
 
     f_id, s1, s2 = FINAL
     fa, fb = winners[s1], winners[s2]
     reached[fa] = reached[fb] = "final"
-    champ = _play_knockout(fa, fb, sampler, rng, fixed_ko)
+    champ = _play_knockout(fa, fb, sampler, rng, fixed_ko, ko_winners)
     reached[champ] = "champion"
     group_winners = [standings[g][0] for g in CONFIG.groups]
     return SimResult(champion=champ, finalists=(fa, fb), reached=reached,
                      group_winners=group_winners)
 
 
-def _run_round(bracket, winners, slot_team, sampler, rng, fixed_ko, reached, next_stage):
+def _run_round(bracket, winners, slot_team, sampler, rng, fixed_ko, reached,
+               next_stage, ko_winners=None):
     new = dict(winners)
     for tie_id, a_src, b_src in bracket:
         home, away = winners[a_src], winners[b_src]
-        w = _play_knockout(home, away, sampler, rng, fixed_ko)
+        w = _play_knockout(home, away, sampler, rng, fixed_ko, ko_winners)
         new[tie_id] = w
         reached[w] = next_stage
     return new

@@ -116,14 +116,64 @@ def import_martj42_to_store(store: ResultsStore | None = None, *,
     return count
 
 
+def import_shootouts_to_store(store: ResultsStore | None = None, *,
+                              force: bool = True) -> int:
+    """Record penalty-shootout winners for knockout ties from martj42 shootouts.csv.
+
+    A shootout means the match was level after extra time, so results.csv carries
+    only the drawn score (often blank for a day or two). Without the shootout
+    winner the simulator re-randomizes the tie and a team that's actually OUT
+    keeps its odds. This stamps the real winner onto the matching stored result
+    (recording the tie if results.csv hasn't landed yet). Returns rows applied.
+    """
+    from src.data.kaggle_results import fetch_shootouts
+    store = store if store is not None else ResultsStore()
+    sh = fetch_shootouts(force=force)
+    opening = pd.Timestamp(CONFIG.groups_raw["dates"]["opening_match"])
+    count = 0
+    for _, s in sh.iterrows():
+        d = pd.Timestamp(s["date"])
+        if pd.isna(d) or d < opening:
+            continue
+        home = CONFIG.normalize(str(s["home_team"]))
+        away = CONFIG.normalize(str(s["away_team"]))
+        winner = CONFIG.normalize(str(s["winner"]))
+        if home not in CONFIG.teams or away not in CONFIG.teams:
+            continue
+        if winner not in (home, away):
+            continue
+        stage = infer_stage(d, home, away)
+        if stage is None or stage == "group":
+            continue
+        # preserve the drawn score if we already have the result; else placeholder
+        existing = next((r for r in store.results
+                         if r.stage == stage and {r.home, r.away} == {home, away}),
+                        None)
+        if existing is not None:
+            hs, as_ = existing.home_score, existing.away_score
+            if existing.home != home:  # realign to (home, away)
+                hs, as_ = as_, hs
+        else:
+            hs, as_ = 0, 0
+        try:
+            store.add(home, away, hs, as_, stage=stage,
+                      on=str(d.date()), winner=winner)
+            count += 1
+        except ValueError:
+            continue
+    return count
+
+
 def _snapshot(store: ResultsStore) -> dict[tuple, tuple]:
-    """Order-agnostic {(matchup, stage): (scores aligned to sorted matchup)}."""
+    """Order-agnostic {(matchup, stage): (scores aligned to sorted matchup, winner)}.
+    Includes the shootout winner so stamping one on an existing tie counts as a
+    change (and triggers a re-simulation)."""
     snap = {}
     for r in store.results:
         a, b = sorted((r.home, r.away))
         scores = ((r.home_score, r.away_score) if r.home == a
                   else (r.away_score, r.home_score))
-        snap[(a, b, r.stage)] = scores
+        snap[(a, b, r.stage)] = (scores, r.winner)
     return snap
 
 
@@ -152,6 +202,7 @@ def sync_results(store: ResultsStore | None = None, *, force: bool = True) -> di
         print(f"[auto_results] espn failed: {exc}")
     try:
         import_martj42_to_store(store, force=force)
+        import_shootouts_to_store(store, force=force)  # stamp penalty winners
         sources.append("martj42")
     except Exception as exc:
         print(f"[auto_results] martj42 failed: {exc}")

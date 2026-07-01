@@ -31,6 +31,7 @@ class Result:
     away_score: int
     stage: str = "group"          # "group" or a knockout round
     date: str = ""
+    winner: str = ""              # shootout winner when a KO tie went to penalties
 
 
 class ResultsStore:
@@ -52,14 +53,18 @@ class ResultsStore:
 
     # ---- mutation -----------------------------------------------------------
     def add(self, home: str, away: str, home_score: int, away_score: int,
-            stage: str = "group", on: str | None = None) -> Result:
+            stage: str = "group", on: str | None = None,
+            winner: str = "") -> Result:
         home, away = CONFIG.normalize(home), CONFIG.normalize(away)
         if home not in CONFIG.teams or away not in CONFIG.teams:
             raise ValueError(f"both teams must be in the 2026 field: {home}, {away}")
         if stage == "group" and CONFIG.group_of(home) != CONFIG.group_of(away):
             raise ValueError(f"{home} and {away} are not in the same group")
+        winner = CONFIG.normalize(winner) if winner else ""
+        if winner and winner not in (home, away):
+            winner = ""  # a shootout winner has to be one of the two sides
         r = Result(home, away, int(home_score), int(away_score), stage,
-                   on or date.today().isoformat())
+                   on or date.today().isoformat(), winner)
         # replace an existing entry for the same matchup+stage
         self.results = [x for x in self.results
                         if not (x.stage == stage and {x.home, x.away} == {home, away})]
@@ -79,13 +84,40 @@ class ResultsStore:
         self.save()
 
     # ---- views --------------------------------------------------------------
+    @staticmethod
+    def result_winner(r: "Result") -> str | None:
+        """Who advanced from a knockout result: the higher score, or the recorded
+        shootout winner if it was level. None if a level tie has no shootout."""
+        if r.home_score > r.away_score:
+            return r.home
+        if r.away_score > r.home_score:
+            return r.away
+        return r.winner or None
+
+    def eliminated(self) -> set[str]:
+        """Teams knocked out — the losing side of any decided knockout tie."""
+        out: set[str] = set()
+        for r in self.results:
+            if r.stage not in KNOCKOUT_STAGES:
+                continue
+            w = self.result_winner(r)
+            if w:
+                out.add(r.away if w == r.home else r.home)
+        return out
+
     def to_fixed(self) -> dict:
         groups: dict[tuple[str, str], tuple[int, int]] = {}
         knockouts: dict[tuple[str, str], tuple[int, int]] = {}
+        ko_winners: dict[frozenset, str] = {}
         for r in self.results:
-            target = knockouts if r.stage in KNOCKOUT_STAGES else groups
-            target[(r.home, r.away)] = (r.home_score, r.away_score)
-        return {"groups": groups, "knockouts": knockouts}
+            if r.stage in KNOCKOUT_STAGES:
+                knockouts[(r.home, r.away)] = (r.home_score, r.away_score)
+                w = self.result_winner(r)
+                if w:
+                    ko_winners[frozenset((r.home, r.away))] = w
+            else:
+                groups[(r.home, r.away)] = (r.home_score, r.away_score)
+        return {"groups": groups, "knockouts": knockouts, "ko_winners": ko_winners}
 
     def to_match_rows(self) -> pd.DataFrame:
         """Rows shaped like matches.parquet, for retraining."""
